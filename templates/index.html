@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lava Notes</title>
     <link rel="icon" type="image/gif" href="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css">
     <style>
         :root {
             --bg-primary: #0d0d0d;
@@ -23,6 +24,17 @@
             --transition: 0.25s ease;
         }
 
+        .light-theme {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e8e8e8;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --border: #ddd;
+        }
+
+        [v-cloak] { display: none !important; }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -33,10 +45,41 @@
             overflow: hidden;
         }
 
+        /* Splash Screen */
+        .splash-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .splash-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 16px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+
         .app-container {
             display: flex;
             height: 100vh;
             width: 100%;
+            position: relative;
         }
 
         /* Left Panel */
@@ -46,15 +89,52 @@
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            transition: width var(--transition), transform var(--transition);
             position: relative;
             flex-shrink: 0;
+        }
+
+        .left-panel.animated {
+            transition: width var(--transition);
         }
 
         .left-panel.collapsed {
             width: 0;
             border-right: none;
             overflow: hidden;
+        }
+
+        .panel-toggle {
+            position: fixed;
+            left: var(--panel-width);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 48px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            z-index: 100;
+            transition: left var(--transition);
+        }
+
+        .panel-toggle.collapsed {
+            left: 0;
+        }
+
+        .panel-toggle:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .panel-toggle .icon {
+            width: 14px;
+            height: 14px;
         }
 
         .panel-header {
@@ -101,7 +181,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all var(--transition);
+            transition: all 0.15s ease;
         }
 
         .icon-btn:hover {
@@ -145,7 +225,7 @@
             font-size: 13px;
             padding: 4px 8px;
             border-radius: 4px;
-            transition: background var(--transition);
+            transition: background 0.15s ease;
         }
 
         .breadcrumb-btn:hover {
@@ -173,7 +253,7 @@
             padding: 10px 12px;
             border-radius: 6px;
             cursor: pointer;
-            transition: background var(--transition);
+            transition: background 0.15s ease;
             margin-bottom: 2px;
         }
 
@@ -190,6 +270,15 @@
         .item-icon {
             color: var(--accent-muted);
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+        }
+
+        .item-icon i {
+            font-size: 18px;
         }
 
         .item-name {
@@ -206,32 +295,40 @@
             font-size: 14px;
         }
 
-        .panel-toggle {
-            position: absolute;
-            right: -12px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 24px;
-            height: 48px;
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 0 8px 8px 0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            z-index: 10;
+            border-radius: 8px;
+            padding: 4px;
+            min-width: 160px;
+            z-index: 200;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        .panel-toggle:hover {
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
             color: var(--text-primary);
+        }
+
+        .context-menu-item:hover {
             background: var(--bg-tertiary);
         }
 
-        .panel-toggle .icon {
-            width: 14px;
-            height: 14px;
+        .context-menu-item.danger {
+            color: var(--danger);
+        }
+
+        .context-menu-item .icon {
+            width: 16px;
+            height: 16px;
         }
 
         /* Main Content */
@@ -334,9 +431,7 @@
         .markdown-content h2 { font-size: 22px; }
         .markdown-content h3 { font-size: 18px; }
 
-        .markdown-content p {
-            margin-bottom: 16px;
-        }
+        .markdown-content p { margin-bottom: 16px; }
 
         .markdown-content code {
             background: var(--bg-tertiary);
@@ -374,9 +469,7 @@
             padding-left: 24px;
         }
 
-        .markdown-content li {
-            margin-bottom: 8px;
-        }
+        .markdown-content li { margin-bottom: 8px; }
 
         .markdown-content blockquote {
             border-left: 3px solid var(--accent);
@@ -436,7 +529,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: all var(--transition);
+            transition: all 0.15s ease;
         }
 
         .btn:hover {
@@ -498,9 +591,7 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        .modal-small {
-            max-width: 360px;
-        }
+        .modal-small { max-width: 360px; }
 
         .modal-header {
             padding: 16px 20px;
@@ -567,6 +658,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            margin-bottom: 12px;
         }
 
         .icon-option {
@@ -580,7 +672,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all var(--transition);
+            transition: all 0.15s ease;
         }
 
         .icon-option:hover {
@@ -591,6 +683,18 @@
         .icon-option.selected {
             border-color: var(--accent);
             background: rgba(232, 168, 96, 0.1);
+            color: var(--accent);
+        }
+
+        .custom-icon-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .custom-icon-preview i {
+            font-size: 24px;
             color: var(--accent);
         }
 
@@ -607,9 +711,7 @@
         }
 
         /* LLM Modal */
-        .llm-modal {
-            max-width: 400px;
-        }
+        .llm-modal { max-width: 400px; }
 
         .llm-prompt {
             background: var(--bg-tertiary);
@@ -648,20 +750,25 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Transitions */
+        /* Transitions (optional) */
         .slide-enter-active,
         .slide-leave-active {
-            transition: all 0.25s ease;
+            transition: all 0.2s ease;
         }
 
         .slide-enter-from {
             opacity: 0;
-            transform: translateX(20px);
+            transform: translateX(10px);
         }
 
         .slide-leave-to {
             opacity: 0;
-            transform: translateX(-20px);
+            transform: translateX(-10px);
+        }
+
+        .no-transition .slide-enter-active,
+        .no-transition .slide-leave-active {
+            transition: none;
         }
 
         /* Responsive */
@@ -676,10 +783,6 @@
 
             .left-panel.collapsed {
                 transform: translateX(-100%);
-            }
-
-            .panel-toggle {
-                right: -32px;
             }
         }
 
@@ -704,16 +807,25 @@
     </style>
 </head>
 <body>
-    <div id="app">
-        <div class="app-container">
+    <!-- Splash Screen -->
+    <div id="splash" class="splash-screen">
+        <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif" alt="Loading" class="splash-logo">
+    </div>
+
+    <div id="app" v-cloak>
+        <div class="app-container" :class="{ 'light-theme': settings.theme === 'light', 'no-transition': !settings.animatedNav }">
+            <!-- Panel Toggle (outside panel) -->
+            <button class="panel-toggle" :class="{ collapsed: isPanelCollapsed }" @click="togglePanel"
+                    :style="{ left: isPanelCollapsed ? '0' : 'var(--panel-width)' }">
+                <svg class="icon"><use :href="isPanelCollapsed ? '#icon-chevron-right' : '#icon-chevron-left'"></use></svg>
+            </button>
+
             <!-- Left Panel -->
-            <aside class="left-panel" :class="{ collapsed: isPanelCollapsed }">
+            <aside class="left-panel" :class="{ collapsed: isPanelCollapsed, animated: settings.animatedNav }">
                 <div class="panel-header">
                     <div class="logo-container">
                         <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
-                             alt="Lava Notes"
-                             class="logo"
-                             :style="{ filter: logoFilter }">
+                             alt="Lava Notes" class="logo" :style="{ filter: logoFilter }">
                         <span class="logo-text">{{ t('appName') }}</span>
                     </div>
                     <div class="panel-actions">
@@ -735,11 +847,12 @@
                         <span class="breadcrumb-current">{{ currentCategory.name }}</span>
                     </div>
 
-                    <transition name="slide" mode="out-in">
+                    <component :is="settings.animatedNav ? 'transition' : 'div'" name="slide" mode="out-in">
                         <div v-if="!currentCategory" key="categories" class="items-list">
                             <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)">
                                 <div class="item-icon">
-                                    <svg class="icon"><use :href="'#icon-' + (cat.icon || 'folder')"></use></svg>
+                                    <i v-if="isDevicon(cat.icon)" :class="cat.icon"></i>
+                                    <svg v-else class="icon"><use :href="'#icon-' + (cat.icon || 'folder')"></use></svg>
                                 </div>
                                 <span class="item-name">{{ cat.name }}</span>
                             </div>
@@ -747,22 +860,21 @@
                         </div>
 
                         <div v-else key="notes" class="items-list">
-                            <div v-for="note in notes" :key="note.id"
+                            <div v-for="note in filteredNotes" :key="note.id"
                                  class="item" :class="{ active: currentNote && currentNote.id === note.id }"
-                                 @click="selectNote(note)" :title="formatDate(note.updated_at)">
+                                 @click="selectNote(note)"
+                                 @contextmenu.prevent="openContextMenu($event, note)"
+                                 :title="formatDate(note.updated_at)">
                                 <div class="item-icon">
-                                    <svg class="icon"><use :href="'#icon-' + (note.icon || 'file-text')"></use></svg>
+                                    <i v-if="isDevicon(note.icon)" :class="note.icon"></i>
+                                    <svg v-else class="icon"><use :href="'#icon-' + (note.icon || 'file-text')"></use></svg>
                                 </div>
-                                <span class="item-name">{{ stripMd(note.name) }}</span>
+                                <span class="item-name">{{ displayNoteName(note.name) }}</span>
                             </div>
-                            <div v-if="notes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
+                            <div v-if="filteredNotes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
                         </div>
-                    </transition>
+                    </component>
                 </div>
-
-                <button class="panel-toggle" @click="togglePanel">
-                    <svg class="icon"><use :href="isPanelCollapsed ? '#icon-chevron-right' : '#icon-chevron-left'"></use></svg>
-                </button>
             </aside>
 
             <!-- Main Content -->
@@ -777,7 +889,7 @@
                 <div v-else class="note-view">
                     <div class="note-header">
                         <div class="note-title-section">
-                            <h1 class="note-title">{{ stripMd(currentNote.name) }}</h1>
+                            <h1 class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
                             <div class="note-meta">
                                 <span>{{ t('created') }}: {{ formatDate(currentNote.created_at) }}</span>
                                 <span>{{ t('updated') }}: {{ formatDate(currentNote.updated_at) }}</span>
@@ -811,6 +923,18 @@
             </main>
         </div>
 
+        <!-- Context Menu -->
+        <div v-if="contextMenu.visible" class="context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
+            <div class="context-menu-item" @click="translateNote" v-if="isAuthenticated">
+                <svg class="icon"><use href="#icon-globe"></use></svg>
+                {{ t('translate') }}
+            </div>
+            <div class="context-menu-item danger" @click="deleteContextNote" v-if="isAuthenticated">
+                <svg class="icon"><use href="#icon-trash-2"></use></svg>
+                {{ t('delete') }}
+            </div>
+        </div>
+
         <!-- Settings Modal -->
         <div class="modal-overlay" v-if="showSettings" @click.self="closeSettings">
             <div class="modal">
@@ -822,6 +946,13 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
+                        <label>{{ t('theme') }}</label>
+                        <select v-model="settings.theme" @change="saveSettings">
+                            <option value="dark">{{ t('dark') }}</option>
+                            <option value="light">{{ t('light') }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>{{ t('language') }}</label>
                         <select v-model="settings.language" @change="saveSettings">
                             <option value="en">English</option>
@@ -831,6 +962,12 @@
                     <div class="form-group">
                         <label>{{ t('hueShift') }}: {{ settings.hue_shift }}°</label>
                         <input type="range" min="0" max="360" v-model.number="settings.hue_shift" @input="applyHue">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" v-model="settings.animatedNav" @change="saveSettings">
+                            {{ t('animatedNav') }}
+                        </label>
                     </div>
 
                     <hr>
@@ -885,6 +1022,12 @@
                                     @click="createForm.icon = icon">
                                 <svg class="icon"><use :href="'#icon-' + icon"></use></svg>
                             </button>
+                        </div>
+                        <label>{{ t('customIcon') }}</label>
+                        <input type="text" v-model="createForm.customIcon" :placeholder="t('customIconPlaceholder')" @input="updateCustomIcon">
+                        <div class="custom-icon-preview" v-if="createForm.customIcon">
+                            <i :class="createForm.customIcon"></i>
+                            <span>{{ t('preview') }}</span>
                         </div>
                     </div>
                 </div>
@@ -987,6 +1130,11 @@
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
         </symbol>
+        <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </symbol>
         <symbol id="icon-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="16 18 22 12 16 6"></polyline>
             <polyline points="8 6 2 12 8 18"></polyline>
@@ -1044,11 +1192,15 @@
                 name: 'Name',
                 enterName: 'Enter name...',
                 icon: 'Icon',
+                customIcon: 'Custom Icon (devicon)',
+                customIconPlaceholder: 'e.g. devicon-javascript-plain',
+                preview: 'Preview',
                 save: 'Save',
                 cancel: 'Cancel',
                 edit: 'Edit',
                 view: 'View',
                 delete: 'Delete',
+                translate: 'Translate',
                 confirmDelete: 'Confirm Delete',
                 deleteWarning: 'Are you sure you want to delete this note? This action cannot be undone.',
                 created: 'Created',
@@ -1059,6 +1211,7 @@
                 light: 'Light',
                 language: 'Language',
                 hueShift: 'Color Hue',
+                animatedNav: 'Animated navigation',
                 llmSettings: 'LLM Settings',
                 provider: 'Provider',
                 none: 'None',
@@ -1067,7 +1220,8 @@
                 askLLM: 'Ask LLM',
                 askPromptOnly: 'Ask (prompt only)',
                 askWithDocument: 'Ask (with document)',
-                thinking: 'Thinking...'
+                thinking: 'Thinking...',
+                translating: 'Translating...'
             },
             ru: {
                 appName: 'Lava Notes',
@@ -1082,11 +1236,15 @@
                 name: 'Название',
                 enterName: 'Введите название...',
                 icon: 'Иконка',
+                customIcon: 'Своя иконка (devicon)',
+                customIconPlaceholder: 'напр. devicon-javascript-plain',
+                preview: 'Превью',
                 save: 'Сохранить',
                 cancel: 'Отмена',
                 edit: 'Редактировать',
                 view: 'Просмотр',
                 delete: 'Удалить',
+                translate: 'Перевести',
                 confirmDelete: 'Подтвердите удаление',
                 deleteWarning: 'Вы уверены, что хотите удалить эту заметку? Это действие нельзя отменить.',
                 created: 'Создано',
@@ -1097,6 +1255,7 @@
                 light: 'Светлая',
                 language: 'Язык',
                 hueShift: 'Оттенок цвета',
+                animatedNav: 'Анимация навигации',
                 llmSettings: 'Настройки LLM',
                 provider: 'Провайдер',
                 none: 'Нет',
@@ -1105,9 +1264,13 @@
                 askLLM: 'Спросить LLM',
                 askPromptOnly: 'Спросить (только промпт)',
                 askWithDocument: 'Спросить (с документом)',
-                thinking: 'Думаю...'
+                thinking: 'Думаю...',
+                translating: 'Перевожу...'
             }
         };
+
+        // Language codes in translations
+        const langCodes = Object.keys(translations);
 
         const app = createApp({
             setup() {
@@ -1120,6 +1283,7 @@
                 const isAuthenticated = ref(false);
                 const editContent = ref('');
                 const editor = ref(null);
+                const llmDebounceTimer = ref(null);
 
                 const showSettings = ref(false);
                 const showCreateModal = ref(false);
@@ -1128,10 +1292,18 @@
                 const llmPrompt = ref('');
                 const llmLoading = ref(false);
 
+                const contextMenu = reactive({
+                    visible: false,
+                    x: 0,
+                    y: 0,
+                    note: null
+                });
+
                 const settings = reactive({
                     theme: 'dark',
                     language: 'en',
-                    hue_shift: 0
+                    hue_shift: 0,
+                    animatedNav: false
                 });
 
                 const llmSettings = reactive({
@@ -1143,30 +1315,55 @@
 
                 const createForm = reactive({
                     name: '',
-                    icon: 'folder'
+                    icon: 'folder',
+                    customIcon: ''
                 });
 
                 const availableIcons = ['folder', 'file-text', 'code', 'book', 'bookmark', 'star', 'archive', 'clipboard', 'terminal', 'database', 'layers'];
 
                 const t = (key) => translations[settings.language]?.[key] || translations.en[key] || key;
 
+                const isDevicon = (icon) => icon && icon.startsWith('devicon-');
+
                 const logoFilter = computed(() => {
                     if (settings.hue_shift === 0) return 'none';
                     return `hue-rotate(${settings.hue_shift}deg)`;
                 });
 
+                // Filter notes by language suffix
+                // Notes without suffix = English (default), notes with __xx = that language only
+                const filteredNotes = computed(() => {
+                    if (isEditing.value) return notes.value;
+                    return notes.value.filter(note => {
+                        const name = note.name || '';
+                        const langMatch = name.match(/__([a-z]{2})(?:\.md)?$/i);
+                        if (!langMatch) {
+                            // No suffix = English content
+                            return settings.language === 'en';
+                        }
+                        const noteLang = langMatch[1].toLowerCase();
+                        return noteLang === settings.language;
+                    });
+                });
+
+                const stripMd = (name) => name?.replace(/\.md$/i, '') || '';
+
+                const displayNoteName = (name) => {
+                    let n = stripMd(name);
+                    // Remove language suffix for display
+                    n = n.replace(/__[a-z]{2}$/i, '');
+                    return n;
+                };
+
                 const renderedMarkdown = computed(() => {
                     if (!currentNote.value) return '';
                     let content = currentNote.value.content || '';
-                    // Convert [[Note]] links to clickable links
                     content = content.replace(/\[\[([^\]]+)\]\]/g, (match, name) => {
                         const parts = name.split('/');
                         return `<a class="note-link" data-note="${name}">${parts[parts.length - 1]}</a>`;
                     });
                     return marked.parse(content);
                 });
-
-                const stripMd = (name) => name?.replace(/\.md$/i, '') || '';
 
                 const formatDate = (date) => {
                     if (!date) return '';
@@ -1228,30 +1425,37 @@
                         loader.src = 'https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js';
                         loader.onload = () => {
                             require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
-                            require(['vs/editor/editor.main'], () => createEditor());
+                            require(['vs/editor/editor.main'], () => createEditorInstance());
                         };
                         document.head.appendChild(loader);
                     } else {
-                        createEditor();
+                        createEditorInstance();
                     }
                 };
 
-                const createEditor = () => {
+                const createEditorInstance = () => {
                     const container = document.getElementById('monaco-editor');
                     if (!container) return;
                     if (editor.value) editor.value.dispose();
 
+                    const isDark = settings.theme === 'dark';
                     monaco.editor.defineTheme('lava-dark', {
                         base: 'vs-dark',
                         inherit: true,
                         rules: [],
                         colors: { 'editor.background': '#1a1a1a' }
                     });
+                    monaco.editor.defineTheme('lava-light', {
+                        base: 'vs',
+                        inherit: true,
+                        rules: [],
+                        colors: { 'editor.background': '#ffffff' }
+                    });
 
                     editor.value = monaco.editor.create(container, {
                         value: editContent.value,
                         language: 'markdown',
-                        theme: 'lava-dark',
+                        theme: isDark ? 'lava-dark' : 'lava-light',
                         minimap: { enabled: false },
                         fontSize: 14,
                         wordWrap: 'on',
@@ -1262,11 +1466,14 @@
 
                     editor.value.onDidChangeModelContent(() => {
                         editContent.value = editor.value.getValue();
-                        checkLLMTrigger();
+                        // Debounced LLM trigger check
+                        if (llmDebounceTimer.value) clearTimeout(llmDebounceTimer.value);
+                        llmDebounceTimer.value = setTimeout(checkLLMTrigger, 500);
                     });
                 };
 
                 const checkLLMTrigger = () => {
+                    if (showLLMPopup.value) return;
                     const content = editor.value?.getValue() || '';
                     const match = content.match(/@llm\s+(.+)$/m);
                     if (match && llmSettings.provider && llmSettings.apiKey) {
@@ -1312,18 +1519,134 @@
                     } catch (e) { console.error(e); }
                 };
 
+                // Context menu
+                const openContextMenu = (e, note) => {
+                    contextMenu.x = e.clientX;
+                    contextMenu.y = e.clientY;
+                    contextMenu.note = note;
+                    contextMenu.visible = true;
+                };
+
+                const closeContextMenu = () => {
+                    contextMenu.visible = false;
+                    contextMenu.note = null;
+                };
+
+                const deleteContextNote = async () => {
+                    if (!contextMenu.note) return;
+                    try {
+                        await fetch(`api/notes/${contextMenu.note.id}`, { method: 'DELETE' });
+                        if (currentNote.value?.id === contextMenu.note.id) {
+                            currentNote.value = null;
+                        }
+                        await loadNotes(currentCategory.value.id);
+                    } catch (e) { console.error(e); }
+                    closeContextMenu();
+                };
+
+                const translateNote = async () => {
+                    if (!contextMenu.note || !llmSettings.provider || !llmSettings.apiKey) {
+                        closeContextMenu();
+                        return;
+                    }
+
+                    const note = contextMenu.note;
+                    closeContextMenu();
+
+                    // Fetch full note content
+                    const res = await fetch(`api/notes/${note.id}`);
+                    const fullNote = await res.json();
+
+                    // Determine target language
+                    const targetLang = settings.language === 'en' ? 'Russian' : 'English';
+                    const targetCode = settings.language === 'en' ? 'ru' : 'en';
+
+                    const prompt = `Translate the following markdown document to ${targetLang}. Keep all markdown formatting intact. Only output the translated content, nothing else.\n\n${fullNote.content}`;
+
+                    llmLoading.value = true;
+                    showLLMPopup.value = true;
+                    llmPrompt.value = t('translating');
+
+                    try {
+                        let response = '';
+                        const model = llmSettings.model || getDefaultModel();
+
+                        if (llmSettings.provider === 'openai') {
+                            const endpoint = llmSettings.endpoint || 'https://api.openai.com/v1';
+                            const r = await fetch(`${endpoint}/chat/completions`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${llmSettings.apiKey}` },
+                                body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+                            });
+                            const data = await r.json();
+                            response = data.choices?.[0]?.message?.content || '';
+                        } else if (llmSettings.provider === 'gemini') {
+                            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmSettings.apiKey}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                            });
+                            const data = await r.json();
+                            response = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                        } else if (llmSettings.provider === 'claude') {
+                            const r = await fetch('https://api.anthropic.com/v1/messages', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'x-api-key': llmSettings.apiKey,
+                                    'anthropic-version': '2023-06-01',
+                                    'anthropic-dangerous-direct-browser-access': 'true'
+                                },
+                                body: JSON.stringify({ model, max_tokens: 4096, messages: [{ role: 'user', content: prompt }] })
+                            });
+                            const data = await r.json();
+                            response = data.content?.[0]?.text || '';
+                        }
+
+                        if (response) {
+                            // Create translated note
+                            const baseName = displayNoteName(fullNote.name);
+                            const newName = `${baseName}__${targetCode}`;
+                            await fetch('api/notes', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    category_id: currentCategory.value.id,
+                                    name: newName,
+                                    content: response,
+                                    icon: fullNote.icon
+                                })
+                            });
+                            await loadNotes(currentCategory.value.id);
+                        }
+                    } catch (e) {
+                        console.error('Translation error:', e);
+                    }
+
+                    llmLoading.value = false;
+                    showLLMPopup.value = false;
+                };
+
                 const openSettings = () => { showSettings.value = true; };
                 const closeSettings = () => { showSettings.value = false; };
 
                 const openCreateModal = () => {
                     createForm.name = '';
                     createForm.icon = currentCategory.value ? 'file-text' : 'folder';
+                    createForm.customIcon = '';
                     showCreateModal.value = true;
                 };
                 const closeCreateModal = () => { showCreateModal.value = false; };
 
+                const updateCustomIcon = () => {
+                    if (createForm.customIcon) {
+                        createForm.icon = createForm.customIcon;
+                    }
+                };
+
                 const create = async () => {
                     if (!createForm.name.trim()) return;
+                    const icon = createForm.customIcon || createForm.icon;
                     try {
                         if (currentCategory.value) {
                             const res = await fetch('api/notes', {
@@ -1333,7 +1656,7 @@
                                     category_id: currentCategory.value.id,
                                     name: createForm.name,
                                     content: '',
-                                    icon: createForm.icon
+                                    icon
                                 })
                             });
                             if (res.ok) {
@@ -1344,7 +1667,7 @@
                             const res = await fetch('api/categories', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ name: createForm.name, icon: createForm.icon })
+                                body: JSON.stringify({ name: createForm.name, icon })
                             });
                             if (res.ok) {
                                 await loadCategories();
@@ -1358,11 +1681,11 @@
                     document.documentElement.style.setProperty('--accent', `hsl(${30 + settings.hue_shift}, 70%, 65%)`);
                     document.documentElement.style.setProperty('--accent-hover', `hsl(${30 + settings.hue_shift}, 75%, 70%)`);
                     document.documentElement.style.setProperty('--accent-muted', `hsl(${30 + settings.hue_shift}, 55%, 55%)`);
+                    saveSettings();
                 };
 
-                const saveSettings = async () => {
+                const saveSettings = () => {
                     localStorage.setItem('lava-settings', JSON.stringify(settings));
-                    applyHue();
                 };
 
                 const saveAllSettings = () => {
@@ -1371,7 +1694,7 @@
                     closeSettings();
                 };
 
-                const loadSettings = () => {
+                const loadSettingsFromStorage = () => {
                     const saved = localStorage.getItem('lava-settings');
                     if (saved) Object.assign(settings, JSON.parse(saved));
                     const llm = localStorage.getItem('lava-llm');
@@ -1452,10 +1775,23 @@
                 };
 
                 onMounted(async () => {
-                    loadSettings();
+                    loadSettingsFromStorage();
                     await checkAuth();
                     await loadCategories();
 
+                    // Hide splash screen
+                    setTimeout(() => {
+                        const splash = document.getElementById('splash');
+                        if (splash) {
+                            splash.classList.add('fade-out');
+                            setTimeout(() => splash.remove(), 300);
+                        }
+                    }, 500);
+
+                    // Close context menu on click outside
+                    document.addEventListener('click', () => closeContextMenu());
+
+                    // Note links
                     document.addEventListener('click', (e) => {
                         if (e.target.classList.contains('note-link')) {
                             const notePath = e.target.dataset.note;
@@ -1477,14 +1813,16 @@
                 });
 
                 return {
-                    isPanelCollapsed, categories, notes, currentCategory, currentNote,
+                    isPanelCollapsed, categories, notes, filteredNotes, currentCategory, currentNote,
                     isEditing, isAuthenticated, showSettings, showCreateModal, showDeleteConfirm,
                     showLLMPopup, llmPrompt, llmLoading, settings, llmSettings, createForm,
-                    availableIcons, t, logoFilter, renderedMarkdown, stripMd, formatDate,
-                    togglePanel, selectCategory, goBack, selectNote, toggleEditMode,
-                    saveNote, cancelEdit, confirmDelete, deleteNote, openSettings, closeSettings,
-                    openCreateModal, closeCreateModal, create, applyHue, saveSettings,
-                    saveAllSettings, getDefaultModel, closeLLMPopup, askLLM
+                    availableIcons, contextMenu, t, isDevicon, logoFilter, renderedMarkdown,
+                    stripMd, displayNoteName, formatDate, togglePanel, selectCategory, goBack,
+                    selectNote, toggleEditMode, saveNote, cancelEdit, confirmDelete, deleteNote,
+                    openContextMenu, closeContextMenu, deleteContextNote, translateNote,
+                    openSettings, closeSettings, openCreateModal, closeCreateModal,
+                    updateCustomIcon, create, applyHue, saveSettings, saveAllSettings,
+                    getDefaultModel, closeLLMPopup, askLLM
                 };
             }
         });
