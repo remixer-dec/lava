@@ -363,7 +363,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "../../", http.StatusFound)
 }
 
 func (h *Handlers) CheckAuth(w http.ResponseWriter, r *http.Request) {

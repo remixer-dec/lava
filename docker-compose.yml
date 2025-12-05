@@ -5,12 +5,12 @@ services:
     build: .
     container_name: lava-notes
     ports:
-      - "8080:8080"
+      - "2025:2025"
     volumes:
       - lava-data:/app/data
     environment:
       - JWT_SECRET=${JWT_SECRET:-}
-      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - BASE_URL=${BASE_URL:-http://localhost:2025}
     restart: unless-stopped
 
 volumes:

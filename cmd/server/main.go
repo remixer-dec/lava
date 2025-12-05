@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 8080, "Server port")
+	port := flag.Int("port", 2025, "Server port")
 	dataDir := flag.String("data", "./data", "Data directory")
 	generateLink := flag.Bool("generate-link", false, "Generate a new login link")
 	flag.Parse()

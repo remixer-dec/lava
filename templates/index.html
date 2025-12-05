@@ -1179,14 +1179,14 @@
 
                 const loadCategories = async () => {
                     try {
-                        const res = await fetch('/api/categories');
+                        const res = await fetch('api/categories');
                         categories.value = await res.json();
                     } catch (e) { console.error(e); }
                 };
 
                 const loadNotes = async (categoryId) => {
                     try {
-                        const res = await fetch(`/api/notes?category_id=${categoryId}`);
+                        const res = await fetch(`api/notes?category_id=${categoryId}`);
                         notes.value = await res.json();
                     } catch (e) { console.error(e); }
                 };
@@ -1207,7 +1207,7 @@
 
                 const selectNote = async (note) => {
                     try {
-                        const res = await fetch(`/api/notes/${note.id}`);
+                        const res = await fetch(`api/notes/${note.id}`);
                         currentNote.value = await res.json();
                         isEditing.value = false;
                     } catch (e) { console.error(e); }
@@ -1278,7 +1278,7 @@
                 const saveNote = async () => {
                     if (!currentNote.value) return;
                     try {
-                        const res = await fetch(`/api/notes/${currentNote.value.id}`, {
+                        const res = await fetch(`api/notes/${currentNote.value.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1305,7 +1305,7 @@
                 const deleteNote = async () => {
                     if (!currentNote.value) return;
                     try {
-                        await fetch(`/api/notes/${currentNote.value.id}`, { method: 'DELETE' });
+                        await fetch(`api/notes/${currentNote.value.id}`, { method: 'DELETE' });
                         currentNote.value = null;
                         showDeleteConfirm.value = false;
                         await loadNotes(currentCategory.value.id);
@@ -1326,7 +1326,7 @@
                     if (!createForm.name.trim()) return;
                     try {
                         if (currentCategory.value) {
-                            const res = await fetch('/api/notes', {
+                            const res = await fetch('api/notes', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -1341,7 +1341,7 @@
                                 closeCreateModal();
                             }
                         } else {
-                            const res = await fetch('/api/categories', {
+                            const res = await fetch('api/categories', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ name: createForm.name, icon: createForm.icon })
@@ -1445,7 +1445,7 @@
 
                 const checkAuth = async () => {
                     try {
-                        const res = await fetch('/api/auth/check');
+                        const res = await fetch('api/auth/check');
                         const data = await res.json();
                         isAuthenticated.value = data.authenticated;
                     } catch (e) { console.error(e); }
