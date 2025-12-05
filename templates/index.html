@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lava Notes</title>
-    <link rel="icon" type="image/gif" href="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif">
+    <link rel="icon" type="image/gif"
+        href="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css">
     <style>
         :root {
@@ -50,9 +52,15 @@
             cursor: pointer;
         }
 
-        [v-cloak] { display: none !important; }
+        [v-cloak] {
+            display: none !important;
+        }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
@@ -88,8 +96,17 @@
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; }
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
         }
 
         .app-container {
@@ -108,6 +125,7 @@
             flex-direction: column;
             position: relative;
             flex-shrink: 0;
+            transition: width .4s ease;
         }
 
         .left-panel.collapsed {
@@ -118,15 +136,15 @@
 
         .panel-toggle {
             position: fixed;
-            left: var(--panel-width);
+            left: calc(var(--panel-width) - 24px);
             top: 50%;
             transform: translateY(-50%);
             width: 24px;
             height: 48px;
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-left: none;
-            border-radius: 0 8px 8px 0;
+            border-right: none;
+            border-radius: 8px 0 0 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -138,6 +156,9 @@
 
         .panel-toggle.collapsed {
             left: 0;
+            border-left: none;
+            border-right: 1px solid var(--border);
+            border-radius: 0 8px 8px 0;
         }
 
         .panel-toggle:hover {
@@ -156,8 +177,9 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid var(--border);
+            /* border-bottom: 1px solid var(--border); */
             flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .logo-container {
@@ -223,8 +245,12 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            border-bottom: 1px solid var(--border);
+            /* border-bottom: 1px solid var(--border); */
             background: var(--bg-tertiary);
+        }
+
+        .light-theme .breadcrumb {
+            background: var(--bg-primary);
         }
 
         .breadcrumb-btn {
@@ -275,9 +301,10 @@
         }
 
         .item.active {
-            background: var(--bg-tertiary);
-            border-left: 2px solid var(--accent);
+            background: var(--accent);
+            border-left: none;
             margin-left: -2px;
+            color: var(--bg-secondary)
         }
 
         .item-icon {
@@ -288,6 +315,10 @@
             justify-content: center;
             width: 20px;
             height: 20px;
+        }
+
+        .active .item-icon {
+            color: var(--bg-secondary);
         }
 
         .item-icon i {
@@ -317,7 +348,7 @@
             padding: 4px;
             min-width: 160px;
             z-index: 200;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .context-menu-item {
@@ -390,6 +421,7 @@
             justify-content: space-between;
             align-items: flex-start;
             flex-shrink: 0;
+            background: var(--bg-secondary);
         }
 
         .note-title {
@@ -408,6 +440,7 @@
         .note-actions {
             display: flex;
             gap: 8px;
+            align-self: center;
         }
 
         .note-content {
@@ -434,17 +467,28 @@
             line-height: 1.7;
         }
 
-        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-            margin-top: 24px;
-            margin-bottom: 12px;
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3 {
+            margin: 4px 0;
             font-weight: 600;
         }
 
-        .markdown-content h1 { font-size: 28px; }
-        .markdown-content h2 { font-size: 22px; }
-        .markdown-content h3 { font-size: 18px; }
+        .markdown-content h1 {
+            font-size: 28px;
+        }
 
-        .markdown-content p { margin-bottom: 16px; }
+        .markdown-content h2 {
+            font-size: 22px;
+        }
+
+        .markdown-content h3 {
+            font-size: 18px;
+        }
+
+        .markdown-content p {
+            margin-bottom: 16px;
+        }
 
         .markdown-content code {
             background: var(--bg-tertiary);
@@ -477,12 +521,15 @@
             text-decoration: underline;
         }
 
-        .markdown-content ul, .markdown-content ol {
+        .markdown-content ul,
+        .markdown-content ol {
             margin-bottom: 16px;
             padding-left: 24px;
         }
 
-        .markdown-content li { margin-bottom: 8px; }
+        .markdown-content li {
+            margin-bottom: 8px;
+        }
 
         .markdown-content blockquote {
             border-left: 3px solid var(--accent);
@@ -502,7 +549,8 @@
             margin-bottom: 16px;
         }
 
-        .markdown-content th, .markdown-content td {
+        .markdown-content th,
+        .markdown-content td {
             border: 1px solid var(--border);
             padding: 10px 14px;
             text-align: left;
@@ -583,8 +631,13 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         .modal {
@@ -600,11 +653,20 @@
         }
 
         @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
-        .modal-small { max-width: 360px; }
+        .modal-small {
+            max-width: 360px;
+        }
 
         .modal-header {
             padding: 16px 20px;
@@ -724,7 +786,9 @@
         }
 
         /* LLM Modal */
-        .llm-modal { max-width: 400px; }
+        .llm-modal {
+            max-width: 400px;
+        }
 
         .llm-prompt {
             background: var(--bg-tertiary);
@@ -760,7 +824,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Responsive */
@@ -798,18 +864,21 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Splash Screen -->
     <div id="splash" class="splash-screen">
-        <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif" alt="Loading" class="splash-logo">
+        <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif" alt="Loading"
+            class="splash-logo">
     </div>
 
     <div id="app" v-cloak>
         <div class="app-container">
             <!-- Panel Toggle (outside panel) -->
-            <button class="panel-toggle" :class="{ collapsed: isPanelCollapsed }" @click="togglePanel"
-                    :style="{ left: isPanelCollapsed ? '0' : 'var(--panel-width)' }">
-                <svg class="icon"><use :href="isPanelCollapsed ? '#icon-chevron-right' : '#icon-chevron-left'"></use></svg>
+            <button class="panel-toggle" :class="{ collapsed: isPanelCollapsed }" @click="togglePanel">
+                <svg class="icon">
+                    <use :href="isPanelCollapsed ? '#icon-chevron-right' : '#icon-chevron-left'"></use>
+                </svg>
             </button>
 
             <!-- Left Panel -->
@@ -817,15 +886,19 @@
                 <div class="panel-header">
                     <div class="logo-container">
                         <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
-                             alt="Lava Notes" class="logo" :style="{ filter: logoFilter }">
+                            alt="Lava Notes" class="logo" :style="{ filter: logoFilter }">
                         <span class="logo-text">{{ t('appName') }}</span>
                     </div>
                     <div class="panel-actions">
                         <button class="icon-btn" @click="openCreateModal" v-if="isAuthenticated" :title="t('create')">
-                            <svg class="icon"><use href="#icon-plus"></use></svg>
+                            <svg class="icon">
+                                <use href="#icon-plus"></use>
+                            </svg>
                         </button>
                         <button class="icon-btn" @click="openSettings" :title="t('settings')">
-                            <svg class="icon"><use href="#icon-settings"></use></svg>
+                            <svg class="icon">
+                                <use href="#icon-settings"></use>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -833,7 +906,9 @@
                 <div class="panel-content">
                     <div class="breadcrumb" v-if="currentCategory">
                         <button class="breadcrumb-btn" @click="goBack">
-                            <svg class="icon"><use href="#icon-arrow-left"></use></svg>
+                            <svg class="icon">
+                                <use href="#icon-arrow-left"></use>
+                            </svg>
                             <span>{{ t('categories') }}</span>
                         </button>
                         <span class="breadcrumb-current">{{ currentCategory.name }}</span>
@@ -843,7 +918,9 @@
                         <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)">
                             <div class="item-icon">
                                 <i v-if="isDevicon(cat.icon)" :class="cat.icon"></i>
-                                <svg v-else class="icon"><use :href="'#icon-' + (cat.icon || 'folder')"></use></svg>
+                                <svg v-else class="icon">
+                                    <use :href="'#icon-' + (cat.icon || 'folder')"></use>
+                                </svg>
                             </div>
                             <span class="item-name">{{ cat.name }}</span>
                         </div>
@@ -851,14 +928,14 @@
                     </div>
 
                     <div v-else class="items-list">
-                        <div v-for="note in filteredNotes" :key="note.id"
-                             class="item" :class="{ active: currentNote && currentNote.id === note.id }"
-                             @click="selectNote(note)"
-                             @contextmenu.prevent="openContextMenu($event, note)"
-                             :title="formatDate(note.updated_at)">
+                        <div v-for="note in filteredNotes" :key="note.id" class="item"
+                            :class="{ active: currentNote && currentNote.id === note.id }" @click="selectNote(note)"
+                            @contextmenu.prevent="openContextMenu($event, note)" :title="formatDate(note.updated_at)">
                             <div class="item-icon">
                                 <i v-if="isDevicon(note.icon)" :class="note.icon"></i>
-                                <svg v-else class="icon"><use :href="'#icon-' + (note.icon || 'file-text')"></use></svg>
+                                <svg v-else class="icon">
+                                    <use :href="'#icon-' + (note.icon || 'file-text')"></use>
+                                </svg>
                             </div>
                             <span class="item-name">{{ displayNoteName(note.name) }}</span>
                         </div>
@@ -871,7 +948,7 @@
             <main class="main-content">
                 <div v-if="!currentNote" class="welcome-screen">
                     <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
-                         alt="Lava Notes" class="welcome-logo" :style="{ filter: logoFilter }">
+                        alt="Lava Notes" class="welcome-logo" :style="{ filter: logoFilter }">
                     <h1>{{ t('welcome') }}</h1>
                     <p>{{ t('selectNote') }}</p>
                 </div>
@@ -886,28 +963,38 @@
                             </div>
                         </div>
                         <div class="note-actions" v-if="isAuthenticated">
-                            <button class="icon-btn" @click="openLLMChat" :title="t('askLLM')" v-if="llmSettings.provider && llmSettings.apiKey">
-                                <svg class="icon"><use href="#icon-message-circle"></use></svg>
+                            <button class="icon-btn" @click="openLLMChat" :title="t('askLLM')">
+                                <svg class="icon">
+                                    <use href="#icon-message-circle"></use>
+                                </svg>
                             </button>
                             <button class="icon-btn" @click="toggleEditMode" :title="isEditing ? t('view') : t('edit')">
-                                <svg class="icon"><use :href="isEditing ? '#icon-eye' : '#icon-edit-2'"></use></svg>
+                                <svg class="icon">
+                                    <use :href="isEditing ? '#icon-eye' : '#icon-edit-2'"></use>
+                                </svg>
                             </button>
                             <button class="icon-btn danger" @click="confirmDelete" :title="t('delete')">
-                                <svg class="icon"><use href="#icon-trash-2"></use></svg>
+                                <svg class="icon">
+                                    <use href="#icon-trash-2"></use>
+                                </svg>
                             </button>
                         </div>
                     </div>
 
                     <div class="note-content">
                         <div v-if="isEditing" class="editor-container">
-                            <div id="monaco-editor" ref="editorContainer"></div>
+                            <vue-monaco-editor v-model:value="editContent" :theme="computedTheme"
+                                :options="editorOptions" language="markdown" height="80vh"
+                                @before-mount="handleBeforeMount"></vue-monaco-editor>
                         </div>
                         <div v-else class="markdown-content" v-html="renderedMarkdown"></div>
                     </div>
 
                     <div v-if="isEditing" class="editor-footer">
                         <button class="btn btn-primary" @click="saveNote">
-                            <svg class="icon"><use href="#icon-save"></use></svg>
+                            <svg class="icon">
+                                <use href="#icon-save"></use>
+                            </svg>
                             {{ t('save') }}
                         </button>
                         <button class="btn" @click="cancelEdit">{{ t('cancel') }}</button>
@@ -917,13 +1004,18 @@
         </div>
 
         <!-- Context Menu -->
-        <div v-if="contextMenu.visible" class="context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
+        <div v-if="contextMenu.visible" class="context-menu"
+            :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
             <div class="context-menu-item" @click="translateNote" v-if="isAuthenticated">
-                <svg class="icon"><use href="#icon-globe"></use></svg>
+                <svg class="icon">
+                    <use href="#icon-globe"></use>
+                </svg>
                 {{ t('translate') }}
             </div>
             <div class="context-menu-item danger" @click="deleteContextNote" v-if="isAuthenticated">
-                <svg class="icon"><use href="#icon-trash-2"></use></svg>
+                <svg class="icon">
+                    <use href="#icon-trash-2"></use>
+                </svg>
                 {{ t('delete') }}
             </div>
         </div>
@@ -934,7 +1026,9 @@
                 <div class="modal-header">
                     <h2>{{ t('settings') }}</h2>
                     <button class="icon-btn" @click="closeSettings">
-                        <svg class="icon"><use href="#icon-x"></use></svg>
+                        <svg class="icon">
+                            <use href="#icon-x"></use>
+                        </svg>
                     </button>
                 </div>
                 <div class="modal-body">
@@ -993,25 +1087,30 @@
                 <div class="modal-header">
                     <h2>{{ currentCategory ? t('createNote') : t('createCategory') }}</h2>
                     <button class="icon-btn" @click="closeCreateModal">
-                        <svg class="icon"><use href="#icon-x"></use></svg>
+                        <svg class="icon">
+                            <use href="#icon-x"></use>
+                        </svg>
                     </button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
                         <label>{{ t('name') }}</label>
-                        <input type="text" v-model="createForm.name" :placeholder="t('enterName')" @keyup.enter="create">
+                        <input type="text" v-model="createForm.name" :placeholder="t('enterName')"
+                            @keyup.enter="create">
                     </div>
                     <div class="form-group">
                         <label>{{ t('icon') }}</label>
                         <div class="icon-picker">
-                            <button v-for="icon in availableIcons" :key="icon"
-                                    class="icon-option" :class="{ selected: createForm.icon === icon }"
-                                    @click="createForm.icon = icon">
-                                <svg class="icon"><use :href="'#icon-' + icon"></use></svg>
+                            <button v-for="icon in availableIcons" :key="icon" class="icon-option"
+                                :class="{ selected: createForm.icon === icon }" @click="createForm.icon = icon">
+                                <svg class="icon">
+                                    <use :href="'#icon-' + icon"></use>
+                                </svg>
                             </button>
                         </div>
                         <label>{{ t('customIcon') }}</label>
-                        <input type="text" v-model="createForm.customIcon" :placeholder="t('customIconPlaceholder')" @input="updateCustomIcon">
+                        <input type="text" v-model="createForm.customIcon" :placeholder="t('customIconPlaceholder')"
+                            @input="updateCustomIcon">
                         <div class="custom-icon-preview" v-if="createForm.customIcon">
                             <i :class="createForm.customIcon"></i>
                             <span>{{ t('preview') }}</span>
@@ -1031,7 +1130,9 @@
                 <div class="modal-header">
                     <h2>{{ t('askLLM') }}</h2>
                     <button class="icon-btn" @click="closeLLMPopup">
-                        <svg class="icon"><use href="#icon-x"></use></svg>
+                        <svg class="icon">
+                            <use href="#icon-x"></use>
+                        </svg>
                     </button>
                 </div>
                 <div class="modal-body">
@@ -1041,8 +1142,10 @@
                             <textarea v-model="llmPrompt" rows="3" :placeholder="t('enterPrompt')"></textarea>
                         </div>
                         <div class="llm-options">
-                            <button class="btn" @click="askLLM(false)" :disabled="!llmPrompt.trim()">{{ t('askPromptOnly') }}</button>
-                            <button class="btn btn-primary" @click="askLLM(true)" :disabled="!llmPrompt.trim()">{{ t('askWithDocument') }}</button>
+                            <button class="btn" @click="askLLM(false)" :disabled="!llmPrompt.trim()">{{
+                                t('askPromptOnly') }}</button>
+                            <button class="btn btn-primary" @click="askLLM(true)" :disabled="!llmPrompt.trim()">{{
+                                t('askWithDocument') }}</button>
                         </div>
                     </div>
                     <div v-else class="llm-loading">
@@ -1072,106 +1175,146 @@
 
     <!-- SVG Icons -->
     <svg style="display: none;">
-        <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
         </symbol>
-        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
             <line x1="16" y1="13" x2="8" y2="13"></line>
             <line x1="16" y1="17" x2="8" y2="17"></line>
             <polyline points="10 9 9 9 8 9"></polyline>
         </symbol>
-        <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
         </symbol>
-        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
         </symbol>
-        <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
         </symbol>
-        <symbol id="icon-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
         </symbol>
-        <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"></polyline>
         </symbol>
-        <symbol id="icon-edit-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-edit-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
         </symbol>
-        <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
             <circle cx="12" cy="12" r="3"></circle>
         </symbol>
-        <symbol id="icon-trash-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-trash-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             <line x1="10" y1="11" x2="10" y2="17"></line>
             <line x1="14" y1="11" x2="14" y2="17"></line>
         </symbol>
-        <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
             <polyline points="17 21 17 13 7 13 7 21"></polyline>
             <polyline points="7 3 7 8 15 8"></polyline>
         </symbol>
-        <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
         </symbol>
-        <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="2" y1="12" x2="22" y2="12"></line>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
         </symbol>
-        <symbol id="icon-message-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        <symbol id="icon-message-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+            </path>
         </symbol>
-        <symbol id="icon-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <polyline points="16 18 22 12 16 6"></polyline>
             <polyline points="8 6 2 12 8 18"></polyline>
         </symbol>
-        <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
         </symbol>
-        <symbol id="icon-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
         </symbol>
-        <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+            </polygon>
         </symbol>
-        <symbol id="icon-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <polyline points="21 8 21 21 3 21 3 8"></polyline>
             <rect x="1" y="3" width="22" height="5"></rect>
             <line x1="10" y1="12" x2="14" y2="12"></line>
         </symbol>
-        <symbol id="icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
         </symbol>
-        <symbol id="icon-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <polyline points="4 17 10 11 4 5"></polyline>
             <line x1="12" y1="19" x2="20" y2="19"></line>
         </symbol>
-        <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
             <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
             <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
         </symbol>
-        <symbol id="icon-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
             <polyline points="2 17 12 22 22 17"></polyline>
             <polyline points="2 12 12 17 22 12"></polyline>
         </symbol>
     </svg>
-
+    <script type="importmap">
+    {
+        "imports": {
+            "vue": "https://unpkg.com/vue@3.6.0-alpha.6/dist/vue.esm-browser.js",
+            "vue-demi": "https://unpkg.com/vue@3.6.0-alpha.6/dist/vue.esm-browser.js",
+            "state-local": "https://unpkg.com/state-local@1.0.7/lib/es/state-local.js",
+            "@monaco-editor/loader": "https://unpkg.com/@monaco-editor/loader@1.7.0/lib/es/index.js",
+            "@guolao/vue-monaco-editor": "https://unpkg.com/@guolao/vue-monaco-editor@1.6.0/files/lib/es/index.js"
+        }
+    }
+    </script>
     <script type="module">
-        import { createApp, ref, reactive, computed, watch, onMounted, nextTick } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-        import { marked } from 'https://unpkg.com/marked@12.0.0/lib/marked.esm.js';
+        import {createApp, ref, reactive, computed, watch, onMounted, nextTick} from 'https://unpkg.com/vue@3.6.0-alpha.6/dist/vue.esm-browser.js';
+        import {marked} from 'https://unpkg.com/marked@17.0.1/lib/marked.esm.js';
+        import {install as VueMonacoEditorPlugin} from 'https://unpkg.com/@guolao/vue-monaco-editor@1.6.0/lib/es/index.js'
 
         const translations = {
             en: {
@@ -1316,11 +1459,37 @@
                     customIcon: ''
                 });
 
+                const editorOptions = {
+                    minimap: {enabled: false},
+                    fontSize: 14,
+                    wordWrap: 'on',
+                    lineNumbers: 'on',
+                    automaticLayout: true,
+                    padding: {top: 16}
+                };
+
                 const availableIcons = ['folder', 'file-text', 'code', 'book', 'bookmark', 'star', 'archive', 'clipboard', 'terminal', 'database', 'layers'];
 
                 const t = (key) => translations[settings.language]?.[key] || translations.en[key] || key;
 
                 const isDevicon = (icon) => icon && icon.startsWith('devicon-');
+
+                const fetchedUrls = new Set();
+
+                const fetchCache = new Map();
+
+                const cache = new Map();
+
+                async function fetchOnce(url, opts) {
+                    let c = cache.get(url);
+                    if (!c) {
+                        const r = await fetch(url, opts);
+                        const b = await r.clone().arrayBuffer();
+                        c = {b, h: r.headers, s: r.status, t: r.statusText};
+                        cache.set(url, c);
+                    }
+                    return new Response(c.b.slice(0), {status: c.s, statusText: c.t, headers: c.h});
+                }
 
                 const logoFilter = computed(() => {
                     if (settings.hue_shift === 0) return 'none';
@@ -1371,20 +1540,20 @@
                     });
                 };
 
-                const togglePanel = () => { isPanelCollapsed.value = !isPanelCollapsed.value; };
+                const togglePanel = () => {isPanelCollapsed.value = !isPanelCollapsed.value;};
 
                 const loadCategories = async () => {
                     try {
                         const res = await fetch('api/categories');
                         categories.value = await res.json();
-                    } catch (e) { console.error(e); }
+                    } catch (e) {console.error(e);}
                 };
 
                 const loadNotes = async (categoryId) => {
                     try {
                         const res = await fetch(`api/notes?category_id=${categoryId}`);
                         notes.value = await res.json();
-                    } catch (e) { console.error(e); }
+                    } catch (e) {console.error(e);}
                 };
 
                 const selectCategory = async (cat) => {
@@ -1403,10 +1572,11 @@
 
                 const selectNote = async (note) => {
                     try {
-                        const res = await fetch(`api/notes/${note.id}`);
+                        currentNote.value = {id: -1, name: note.name.value, content: 'Loading', icon: note.icon.value}
+                        const res = await fetchOnce(`api/notes/${note.id}`);
                         currentNote.value = await res.json();
                         isEditing.value = false;
-                    } catch (e) { console.error(e); }
+                    } catch (e) {console.error(e);}
                 };
 
                 const toggleEditMode = async () => {
@@ -1414,59 +1584,27 @@
                     if (isEditing.value) {
                         editContent.value = currentNote.value.content || '';
                         await nextTick();
-                        initEditor();
                     }
                 };
 
-                const initEditor = async () => {
-                    if (!window.monaco) {
-                        const loader = document.createElement('script');
-                        loader.src = 'https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js';
-                        loader.onload = () => {
-                            require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
-                            require(['vs/editor/editor.main'], () => createEditorInstance());
-                        };
-                        document.head.appendChild(loader);
-                    } else {
-                        createEditorInstance();
-                    }
-                };
-
-                const createEditorInstance = () => {
-                    const container = document.getElementById('monaco-editor');
-                    if (!container) return;
-                    if (editor.value) editor.value.dispose();
-
-                    const isDark = settings.theme === 'dark';
+                const handleBeforeMount = (monaco) => {
+                    // Define Dark Theme
                     monaco.editor.defineTheme('lava-dark', {
                         base: 'vs-dark',
                         inherit: true,
                         rules: [],
-                        colors: { 'editor.background': '#1a1a1a' }
+                        colors: {'editor.background': '#1a1a1a', 'editor.lineHighlightBorder': '#00000000'}
                     });
+
+                    // Define Light Theme
                     monaco.editor.defineTheme('lava-light', {
                         base: 'vs',
                         inherit: true,
                         rules: [],
-                        colors: { 'editor.background': '#ffffff' }
-                    });
-
-                    editor.value = monaco.editor.create(container, {
-                        value: editContent.value,
-                        language: 'markdown',
-                        theme: isDark ? 'lava-dark' : 'lava-light',
-                        minimap: { enabled: false },
-                        fontSize: 14,
-                        wordWrap: 'on',
-                        lineNumbers: 'on',
-                        automaticLayout: true,
-                        padding: { top: 16 }
-                    });
-
-                    editor.value.onDidChangeModelContent(() => {
-                        editContent.value = editor.value.getValue();
+                        colors: {'editor.background': '#ffffff', 'editor.lineHighlightBorder': '#00000000'}
                     });
                 };
+
 
                 const openLLMChat = () => {
                     llmPrompt.value = '';
@@ -1475,10 +1613,11 @@
 
                 const saveNote = async () => {
                     if (!currentNote.value) return;
+                    fetchCache.delete(`api/notes/${currentNote.value.id}`)
                     try {
                         const res = await fetch(`api/notes/${currentNote.value.id}`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({
                                 name: currentNote.value.name,
                                 content: editContent.value,
@@ -1490,7 +1629,7 @@
                             isEditing.value = false;
                             await loadNotes(currentCategory.value.id);
                         }
-                    } catch (e) { console.error(e); }
+                    } catch (e) {console.error(e);}
                 };
 
                 const cancelEdit = () => {
@@ -1498,16 +1637,16 @@
                     editContent.value = '';
                 };
 
-                const confirmDelete = () => { showDeleteConfirm.value = true; };
+                const confirmDelete = () => {showDeleteConfirm.value = true;};
 
                 const deleteNote = async () => {
                     if (!currentNote.value) return;
                     try {
-                        await fetch(`api/notes/${currentNote.value.id}`, { method: 'DELETE' });
+                        await fetch(`api/notes/${currentNote.value.id}`, {method: 'DELETE'});
                         currentNote.value = null;
                         showDeleteConfirm.value = false;
                         await loadNotes(currentCategory.value.id);
-                    } catch (e) { console.error(e); }
+                    } catch (e) {console.error(e);}
                 };
 
                 // Context menu
@@ -1526,12 +1665,12 @@
                 const deleteContextNote = async () => {
                     if (!contextMenu.note) return;
                     try {
-                        await fetch(`api/notes/${contextMenu.note.id}`, { method: 'DELETE' });
+                        await fetch(`api/notes/${contextMenu.note.id}`, {method: 'DELETE'});
                         if (currentNote.value?.id === contextMenu.note.id) {
                             currentNote.value = null;
                         }
                         await loadNotes(currentCategory.value.id);
-                    } catch (e) { console.error(e); }
+                    } catch (e) {console.error(e);}
                     closeContextMenu();
                 };
 
@@ -1566,16 +1705,16 @@
                             const endpoint = llmSettings.endpoint || 'https://api.openai.com/v1';
                             const r = await fetch(`${endpoint}/chat/completions`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${llmSettings.apiKey}` },
-                                body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+                                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${llmSettings.apiKey}`},
+                                body: JSON.stringify({model, messages: [{role: 'user', content: prompt}]})
                             });
                             const data = await r.json();
                             response = data.choices?.[0]?.message?.content || '';
                         } else if (llmSettings.provider === 'gemini') {
                             const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmSettings.apiKey}`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({contents: [{parts: [{text: prompt}]}]})
                             });
                             const data = await r.json();
                             response = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -1588,7 +1727,7 @@
                                     'anthropic-version': '2023-06-01',
                                     'anthropic-dangerous-direct-browser-access': 'true'
                                 },
-                                body: JSON.stringify({ model, max_tokens: 4096, messages: [{ role: 'user', content: prompt }] })
+                                body: JSON.stringify({model, max_tokens: 4096, messages: [{role: 'user', content: prompt}]})
                             });
                             const data = await r.json();
                             response = data.content?.[0]?.text || '';
@@ -1600,7 +1739,7 @@
                             const newName = `${baseName}__${targetCode}`;
                             await fetch('api/notes', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({
                                     category_id: currentCategory.value.id,
                                     name: newName,
@@ -1618,8 +1757,8 @@
                     showLLMPopup.value = false;
                 };
 
-                const openSettings = () => { showSettings.value = true; };
-                const closeSettings = () => { showSettings.value = false; };
+                const openSettings = () => {showSettings.value = true;};
+                const closeSettings = () => {showSettings.value = false;};
 
                 const openCreateModal = () => {
                     createForm.name = '';
@@ -1627,7 +1766,7 @@
                     createForm.customIcon = '';
                     showCreateModal.value = true;
                 };
-                const closeCreateModal = () => { showCreateModal.value = false; };
+                const closeCreateModal = () => {showCreateModal.value = false;};
 
                 const updateCustomIcon = () => {
                     if (createForm.customIcon) {
@@ -1642,7 +1781,7 @@
                         if (currentCategory.value) {
                             const res = await fetch('api/notes', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({
                                     category_id: currentCategory.value.id,
                                     name: createForm.name,
@@ -1657,15 +1796,15 @@
                         } else {
                             const res = await fetch('api/categories', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ name: createForm.name, icon })
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({name: createForm.name, icon})
                             });
                             if (res.ok) {
                                 await loadCategories();
                                 closeCreateModal();
                             }
                         }
-                    } catch (e) { console.error(e); }
+                    } catch (e) {console.error(e);}
                 };
 
                 const applyTheme = () => {
@@ -1686,6 +1825,10 @@
                     saveSettings();
                 };
 
+                const computedTheme = computed(() => {
+                    return settings.theme === 'dark' ? 'lava-dark' : 'lava-light';
+                });
+
                 const saveSettings = () => {
                     localStorage.setItem('lava-settings', JSON.stringify(settings));
                 };
@@ -1705,11 +1848,11 @@
                 };
 
                 const getDefaultModel = () => {
-                    const defaults = { gemini: 'gemini-pro', openai: 'gpt-4', claude: 'claude-3-sonnet-20240229' };
+                    const defaults = {gemini: 'gemini-pro', openai: 'gpt-4', claude: 'claude-3-sonnet-20240229'};
                     return defaults[llmSettings.provider] || '';
                 };
 
-                const closeLLMPopup = () => { showLLMPopup.value = false; llmPrompt.value = ''; };
+                const closeLLMPopup = () => {showLLMPopup.value = false; llmPrompt.value = '';};
 
                 const askLLM = async (includeDoc) => {
                     if (!llmSettings.provider || !llmSettings.apiKey) return;
@@ -1726,16 +1869,16 @@
                             const endpoint = llmSettings.endpoint || 'https://api.openai.com/v1';
                             const res = await fetch(`${endpoint}/chat/completions`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${llmSettings.apiKey}` },
-                                body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+                                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${llmSettings.apiKey}`},
+                                body: JSON.stringify({model, messages: [{role: 'user', content: prompt}]})
                             });
                             const data = await res.json();
                             response = data.choices?.[0]?.message?.content || '';
                         } else if (llmSettings.provider === 'gemini') {
                             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmSettings.apiKey}`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({contents: [{parts: [{text: prompt}]}]})
                             });
                             const data = await res.json();
                             response = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -1748,7 +1891,7 @@
                                     'anthropic-version': '2023-06-01',
                                     'anthropic-dangerous-direct-browser-access': 'true'
                                 },
-                                body: JSON.stringify({ model, max_tokens: 4096, messages: [{ role: 'user', content: prompt }] })
+                                body: JSON.stringify({model, max_tokens: 4096, messages: [{role: 'user', content: prompt}]})
                             });
                             const data = await res.json();
                             response = data.content?.[0]?.text || '';
@@ -1757,8 +1900,8 @@
                         if (response && editor.value) {
                             // Insert response at cursor position or append
                             const selection = editor.value.getSelection();
-                            const id = { major: 1, minor: 1 };
-                            const op = { identifier: id, range: selection, text: response, forceMoveMarkers: true };
+                            const id = {major: 1, minor: 1};
+                            const op = {identifier: id, range: selection, text: response, forceMoveMarkers: true};
                             editor.value.executeEdits("llm-insert", [op]);
                             editContent.value = editor.value.getValue();
                         }
@@ -1775,7 +1918,7 @@
                         const res = await fetch('api/auth/check');
                         const data = await res.json();
                         isAuthenticated.value = data.authenticated;
-                    } catch (e) { console.error(e); }
+                    } catch (e) {console.error(e);}
                 };
 
                 onMounted(async () => {
@@ -1817,8 +1960,8 @@
                 });
 
                 return {
-                    isPanelCollapsed, categories, notes, filteredNotes, currentCategory, currentNote,
-                    isEditing, isAuthenticated, showSettings, showCreateModal, showDeleteConfirm,
+                    isPanelCollapsed, editContent, editorOptions, handleBeforeMount, categories, notes, filteredNotes, currentCategory, currentNote,
+                    isEditing, isAuthenticated, showSettings, showCreateModal, showDeleteConfirm, computedTheme,
                     showLLMPopup, llmPrompt, llmLoading, settings, llmSettings, createForm,
                     availableIcons, contextMenu, t, isDevicon, logoFilter, renderedMarkdown,
                     stripMd, displayNoteName, formatDate, togglePanel, selectCategory, goBack,
@@ -1830,8 +1973,14 @@
                 };
             }
         });
+        app.use(VueMonacoEditorPlugin, {
+            paths: {
+                vs: 'https://unpkg.com/monaco-editor@0.55.1/min/vs'
+            },
+        });
 
         app.mount('#app');
     </script>
 </body>
+
 </html>
