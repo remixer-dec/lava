@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lava Notes</title>
+    <link rel="icon" type="image/gif" href="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif">
+    <style>
+        :root {
+            --bg-primary: #0d0d0d;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #252525;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --accent: #e8a860;
+            --accent-hover: #f0b870;
+            --accent-muted: #d4915a;
+            --border: #333;
+            --danger: #e85050;
+            --success: #50c878;
+            --panel-width: 280px;
+            --header-height: 56px;
+            --transition: 0.25s ease;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            width: var(--panel-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: width var(--transition), transform var(--transition);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .left-panel.collapsed {
+            width: 0;
+            border-right: none;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            height: var(--header-height);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+        }
+
+        .logo-text {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--accent);
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .icon-btn.danger:hover {
+            background: rgba(232, 80, 80, 0.15);
+            color: var(--danger);
+        }
+
+        .icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .breadcrumb {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-tertiary);
+        }
+
+        .breadcrumb-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background var(--transition);
+        }
+
+        .breadcrumb-btn:hover {
+            background: var(--bg-secondary);
+        }
+
+        .breadcrumb-btn .icon {
+            width: 14px;
+            height: 14px;
+        }
+
+        .breadcrumb-current {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .items-list {
+            padding: 8px;
+        }
+
+        .item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background var(--transition);
+            margin-bottom: 2px;
+        }
+
+        .item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .item.active {
+            background: var(--bg-tertiary);
+            border-left: 2px solid var(--accent);
+            margin-left: -2px;
+        }
+
+        .item-icon {
+            color: var(--accent-muted);
+            flex-shrink: 0;
+        }
+
+        .item-name {
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .panel-toggle {
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 48px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            z-index: 10;
+        }
+
+        .panel-toggle:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .panel-toggle .icon {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .welcome-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            color: var(--text-secondary);
+        }
+
+        .welcome-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            opacity: 0.8;
+        }
+
+        .welcome-screen h1 {
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .note-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .note-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-shrink: 0;
+        }
+
+        .note-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .note-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .note-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .note-content {
+            flex: 1;
+            overflow: auto;
+            padding: 24px;
+        }
+
+        .editor-container {
+            height: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        #monaco-editor {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+        }
+
+        .markdown-content {
+            max-width: 800px;
+            line-height: 1.7;
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            margin-top: 24px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .markdown-content h1 { font-size: 28px; }
+        .markdown-content h2 { font-size: 22px; }
+        .markdown-content h3 { font-size: 18px; }
+
+        .markdown-content p {
+            margin-bottom: 16px;
+        }
+
+        .markdown-content code {
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.9em;
+        }
+
+        .markdown-content pre {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .markdown-content a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+
+        .markdown-content li {
+            margin-bottom: 8px;
+        }
+
+        .markdown-content blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 16px;
+            margin: 16px 0;
+            color: var(--text-secondary);
+        }
+
+        .markdown-content img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content th, .markdown-content td {
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        .markdown-content th {
+            background: var(--bg-tertiary);
+        }
+
+        .note-link {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .note-link:hover {
+            text-decoration: underline;
+        }
+
+        .editor-footer {
+            padding: 12px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all var(--transition);
+        }
+
+        .btn:hover {
+            background: var(--bg-secondary);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+        }
+
+        .btn .icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.25s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-small {
+            max-width: 360px;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group input[type="range"] {
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .icon-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .icon-option {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+        }
+
+        .icon-option:hover {
+            border-color: var(--accent-muted);
+            color: var(--text-primary);
+        }
+
+        .icon-option.selected {
+            border-color: var(--accent);
+            background: rgba(232, 168, 96, 0.1);
+            color: var(--accent);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        /* LLM Modal */
+        .llm-modal {
+            max-width: 400px;
+        }
+
+        .llm-prompt {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .llm-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .llm-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Transitions */
+        .slide-enter-active,
+        .slide-leave-active {
+            transition: all 0.25s ease;
+        }
+
+        .slide-enter-from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        .slide-leave-to {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .left-panel {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100%;
+                z-index: 50;
+            }
+
+            .left-panel.collapsed {
+                transform: translateX(-100%);
+            }
+
+            .panel-toggle {
+                right: -32px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app-container">
+            <!-- Left Panel -->
+            <aside class="left-panel" :class="{ collapsed: isPanelCollapsed }">
+                <div class="panel-header">
+                    <div class="logo-container">
+                        <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
+                             alt="Lava Notes"
+                             class="logo"
+                             :style="{ filter: logoFilter }">
+                        <span class="logo-text">{{ t('appName') }}</span>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="icon-btn" @click="openCreateModal" v-if="isAuthenticated" :title="t('create')">
+                            <svg class="icon"><use href="#icon-plus"></use></svg>
+                        </button>
+                        <button class="icon-btn" @click="openSettings" :title="t('settings')">
+                            <svg class="icon"><use href="#icon-settings"></use></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-content">
+                    <div class="breadcrumb" v-if="currentCategory">
+                        <button class="breadcrumb-btn" @click="goBack">
+                            <svg class="icon"><use href="#icon-arrow-left"></use></svg>
+                            <span>{{ t('categories') }}</span>
+                        </button>
+                        <span class="breadcrumb-current">{{ currentCategory.name }}</span>
+                    </div>
+
+                    <transition name="slide" mode="out-in">
+                        <div v-if="!currentCategory" key="categories" class="items-list">
+                            <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)">
+                                <div class="item-icon">
+                                    <svg class="icon"><use :href="'#icon-' + (cat.icon || 'folder')"></use></svg>
+                                </div>
+                                <span class="item-name">{{ cat.name }}</span>
+                            </div>
+                            <div v-if="categories.length === 0" class="empty-state">{{ t('noCategories') }}</div>
+                        </div>
+
+                        <div v-else key="notes" class="items-list">
+                            <div v-for="note in notes" :key="note.id"
+                                 class="item" :class="{ active: currentNote && currentNote.id === note.id }"
+                                 @click="selectNote(note)" :title="formatDate(note.updated_at)">
+                                <div class="item-icon">
+                                    <svg class="icon"><use :href="'#icon-' + (note.icon || 'file-text')"></use></svg>
+                                </div>
+                                <span class="item-name">{{ stripMd(note.name) }}</span>
+                            </div>
+                            <div v-if="notes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
+                        </div>
+                    </transition>
+                </div>
+
+                <button class="panel-toggle" @click="togglePanel">
+                    <svg class="icon"><use :href="isPanelCollapsed ? '#icon-chevron-right' : '#icon-chevron-left'"></use></svg>
+                </button>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <div v-if="!currentNote" class="welcome-screen">
+                    <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
+                         alt="Lava Notes" class="welcome-logo" :style="{ filter: logoFilter }">
+                    <h1>{{ t('welcome') }}</h1>
+                    <p>{{ t('selectNote') }}</p>
+                </div>
+
+                <div v-else class="note-view">
+                    <div class="note-header">
+                        <div class="note-title-section">
+                            <h1 class="note-title">{{ stripMd(currentNote.name) }}</h1>
+                            <div class="note-meta">
+                                <span>{{ t('created') }}: {{ formatDate(currentNote.created_at) }}</span>
+                                <span>{{ t('updated') }}: {{ formatDate(currentNote.updated_at) }}</span>
+                            </div>
+                        </div>
+                        <div class="note-actions" v-if="isAuthenticated">
+                            <button class="icon-btn" @click="toggleEditMode" :title="isEditing ? t('view') : t('edit')">
+                                <svg class="icon"><use :href="isEditing ? '#icon-eye' : '#icon-edit-2'"></use></svg>
+                            </button>
+                            <button class="icon-btn danger" @click="confirmDelete" :title="t('delete')">
+                                <svg class="icon"><use href="#icon-trash-2"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="note-content">
+                        <div v-if="isEditing" class="editor-container">
+                            <div id="monaco-editor" ref="editorContainer"></div>
+                        </div>
+                        <div v-else class="markdown-content" v-html="renderedMarkdown"></div>
+                    </div>
+
+                    <div v-if="isEditing" class="editor-footer">
+                        <button class="btn btn-primary" @click="saveNote">
+                            <svg class="icon"><use href="#icon-save"></use></svg>
+                            {{ t('save') }}
+                        </button>
+                        <button class="btn" @click="cancelEdit">{{ t('cancel') }}</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="modal-overlay" v-if="showSettings" @click.self="closeSettings">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>{{ t('settings') }}</h2>
+                    <button class="icon-btn" @click="closeSettings">
+                        <svg class="icon"><use href="#icon-x"></use></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>{{ t('language') }}</label>
+                        <select v-model="settings.language" @change="saveSettings">
+                            <option value="en">English</option>
+                            <option value="ru">Русский</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>{{ t('hueShift') }}: {{ settings.hue_shift }}°</label>
+                        <input type="range" min="0" max="360" v-model.number="settings.hue_shift" @input="applyHue">
+                    </div>
+
+                    <hr>
+                    <h3>{{ t('llmSettings') }}</h3>
+                    <div class="form-group">
+                        <label>{{ t('provider') }}</label>
+                        <select v-model="llmSettings.provider">
+                            <option value="">{{ t('none') }}</option>
+                            <option value="gemini">Gemini</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="claude">Claude</option>
+                        </select>
+                    </div>
+                    <div class="form-group" v-if="llmSettings.provider">
+                        <label>API Key</label>
+                        <input type="password" v-model="llmSettings.apiKey" placeholder="API Key">
+                    </div>
+                    <div class="form-group" v-if="llmSettings.provider === 'openai'">
+                        <label>{{ t('endpoint') }}</label>
+                        <input type="text" v-model="llmSettings.endpoint" placeholder="https://api.openai.com/v1">
+                    </div>
+                    <div class="form-group" v-if="llmSettings.provider">
+                        <label>{{ t('model') }}</label>
+                        <input type="text" v-model="llmSettings.model" :placeholder="getDefaultModel()">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @click="saveAllSettings">{{ t('save') }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Modal -->
+        <div class="modal-overlay" v-if="showCreateModal" @click.self="closeCreateModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>{{ currentCategory ? t('createNote') : t('createCategory') }}</h2>
+                    <button class="icon-btn" @click="closeCreateModal">
+                        <svg class="icon"><use href="#icon-x"></use></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>{{ t('name') }}</label>
+                        <input type="text" v-model="createForm.name" :placeholder="t('enterName')" @keyup.enter="create">
+                    </div>
+                    <div class="form-group">
+                        <label>{{ t('icon') }}</label>
+                        <div class="icon-picker">
+                            <button v-for="icon in availableIcons" :key="icon"
+                                    class="icon-option" :class="{ selected: createForm.icon === icon }"
+                                    @click="createForm.icon = icon">
+                                <svg class="icon"><use :href="'#icon-' + icon"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" @click="closeCreateModal">{{ t('cancel') }}</button>
+                    <button class="btn btn-primary" @click="create">{{ t('create') }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM Popup -->
+        <div class="modal-overlay" v-if="showLLMPopup" @click.self="closeLLMPopup">
+            <div class="modal llm-modal">
+                <div class="modal-header">
+                    <h2>{{ t('askLLM') }}</h2>
+                    <button class="icon-btn" @click="closeLLMPopup">
+                        <svg class="icon"><use href="#icon-x"></use></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="llm-prompt">"{{ llmPrompt }}"</p>
+                    <div v-if="!llmLoading" class="llm-options">
+                        <button class="btn" @click="askLLM(false)">{{ t('askPromptOnly') }}</button>
+                        <button class="btn btn-primary" @click="askLLM(true)">{{ t('askWithDocument') }}</button>
+                    </div>
+                    <div v-else class="llm-loading">
+                        <div class="spinner"></div>
+                        <span>{{ t('thinking') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation -->
+        <div class="modal-overlay" v-if="showDeleteConfirm" @click.self="showDeleteConfirm = false">
+            <div class="modal modal-small">
+                <div class="modal-header">
+                    <h2>{{ t('confirmDelete') }}</h2>
+                </div>
+                <div class="modal-body">
+                    <p>{{ t('deleteWarning') }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" @click="showDeleteConfirm = false">{{ t('cancel') }}</button>
+                    <button class="btn btn-danger" @click="deleteNote">{{ t('delete') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SVG Icons -->
+    <svg style="display: none;">
+        <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </symbol>
+        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+        </symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </symbol>
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </symbol>
+        <symbol id="icon-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </symbol>
+        <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+        </symbol>
+        <symbol id="icon-edit-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+        </symbol>
+        <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </symbol>
+        <symbol id="icon-trash-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+        </symbol>
+        <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+        </symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+        </symbol>
+        <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </symbol>
+        <symbol id="icon-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </symbol>
+        <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </symbol>
+        <symbol id="icon-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+        </symbol>
+        <symbol id="icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+        </symbol>
+        <symbol id="icon-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+        </symbol>
+        <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        </symbol>
+        <symbol id="icon-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+        </symbol>
+    </svg>
+
+    <script type="module">
+        import { createApp, ref, reactive, computed, watch, onMounted, nextTick } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+        import { marked } from 'https://unpkg.com/marked@12.0.0/lib/marked.esm.js';
+
+        const translations = {
+            en: {
+                appName: 'Lava Notes',
+                welcome: 'Welcome to Lava Notes',
+                selectNote: 'Select a note from the sidebar to get started',
+                categories: 'Categories',
+                noCategories: 'No categories yet',
+                noNotes: 'No notes in this category',
+                create: 'Create',
+                createCategory: 'Create Category',
+                createNote: 'Create Note',
+                name: 'Name',
+                enterName: 'Enter name...',
+                icon: 'Icon',
+                save: 'Save',
+                cancel: 'Cancel',
+                edit: 'Edit',
+                view: 'View',
+                delete: 'Delete',
+                confirmDelete: 'Confirm Delete',
+                deleteWarning: 'Are you sure you want to delete this note? This action cannot be undone.',
+                created: 'Created',
+                updated: 'Updated',
+                settings: 'Settings',
+                theme: 'Theme',
+                dark: 'Dark',
+                light: 'Light',
+                language: 'Language',
+                hueShift: 'Color Hue',
+                llmSettings: 'LLM Settings',
+                provider: 'Provider',
+                none: 'None',
+                endpoint: 'Custom Endpoint',
+                model: 'Model',
+                askLLM: 'Ask LLM',
+                askPromptOnly: 'Ask (prompt only)',
+                askWithDocument: 'Ask (with document)',
+                thinking: 'Thinking...'
+            },
+            ru: {
+                appName: 'Lava Notes',
+                welcome: 'Добро пожаловать в Lava Notes',
+                selectNote: 'Выберите заметку из боковой панели',
+                categories: 'Категории',
+                noCategories: 'Категорий пока нет',
+                noNotes: 'В этой категории нет заметок',
+                create: 'Создать',
+                createCategory: 'Создать категорию',
+                createNote: 'Создать заметку',
+                name: 'Название',
+                enterName: 'Введите название...',
+                icon: 'Иконка',
+                save: 'Сохранить',
+                cancel: 'Отмена',
+                edit: 'Редактировать',
+                view: 'Просмотр',
+                delete: 'Удалить',
+                confirmDelete: 'Подтвердите удаление',
+                deleteWarning: 'Вы уверены, что хотите удалить эту заметку? Это действие нельзя отменить.',
+                created: 'Создано',
+                updated: 'Обновлено',
+                settings: 'Настройки',
+                theme: 'Тема',
+                dark: 'Тёмная',
+                light: 'Светлая',
+                language: 'Язык',
+                hueShift: 'Оттенок цвета',
+                llmSettings: 'Настройки LLM',
+                provider: 'Провайдер',
+                none: 'Нет',
+                endpoint: 'Свой endpoint',
+                model: 'Модель',
+                askLLM: 'Спросить LLM',
+                askPromptOnly: 'Спросить (только промпт)',
+                askWithDocument: 'Спросить (с документом)',
+                thinking: 'Думаю...'
+            }
+        };
+
+        const app = createApp({
+            setup() {
+                const isPanelCollapsed = ref(false);
+                const categories = ref([]);
+                const notes = ref([]);
+                const currentCategory = ref(null);
+                const currentNote = ref(null);
+                const isEditing = ref(false);
+                const isAuthenticated = ref(false);
+                const editContent = ref('');
+                const editor = ref(null);
+
+                const showSettings = ref(false);
+                const showCreateModal = ref(false);
+                const showDeleteConfirm = ref(false);
+                const showLLMPopup = ref(false);
+                const llmPrompt = ref('');
+                const llmLoading = ref(false);
+
+                const settings = reactive({
+                    theme: 'dark',
+                    language: 'en',
+                    hue_shift: 0
+                });
+
+                const llmSettings = reactive({
+                    provider: '',
+                    apiKey: '',
+                    endpoint: '',
+                    model: ''
+                });
+
+                const createForm = reactive({
+                    name: '',
+                    icon: 'folder'
+                });
+
+                const availableIcons = ['folder', 'file-text', 'code', 'book', 'bookmark', 'star', 'archive', 'clipboard', 'terminal', 'database', 'layers'];
+
+                const t = (key) => translations[settings.language]?.[key] || translations.en[key] || key;
+
+                const logoFilter = computed(() => {
+                    if (settings.hue_shift === 0) return 'none';
+                    return `hue-rotate(${settings.hue_shift}deg)`;
+                });
+
+                const renderedMarkdown = computed(() => {
+                    if (!currentNote.value) return '';
+                    let content = currentNote.value.content || '';
+                    // Convert [[Note]] links to clickable links
+                    content = content.replace(/\[\[([^\]]+)\]\]/g, (match, name) => {
+                        const parts = name.split('/');
+                        return `<a class="note-link" data-note="${name}">${parts[parts.length - 1]}</a>`;
+                    });
+                    return marked.parse(content);
+                });
+
+                const stripMd = (name) => name?.replace(/\.md$/i, '') || '';
+
+                const formatDate = (date) => {
+                    if (!date) return '';
+                    return new Date(date).toLocaleDateString(settings.language === 'ru' ? 'ru-RU' : 'en-US', {
+                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                };
+
+                const togglePanel = () => { isPanelCollapsed.value = !isPanelCollapsed.value; };
+
+                const loadCategories = async () => {
+                    try {
+                        const res = await fetch('/api/categories');
+                        categories.value = await res.json();
+                    } catch (e) { console.error(e); }
+                };
+
+                const loadNotes = async (categoryId) => {
+                    try {
+                        const res = await fetch(`/api/notes?category_id=${categoryId}`);
+                        notes.value = await res.json();
+                    } catch (e) { console.error(e); }
+                };
+
+                const selectCategory = async (cat) => {
+                    currentCategory.value = cat;
+                    currentNote.value = null;
+                    isEditing.value = false;
+                    await loadNotes(cat.id);
+                };
+
+                const goBack = () => {
+                    currentCategory.value = null;
+                    currentNote.value = null;
+                    notes.value = [];
+                    isEditing.value = false;
+                };
+
+                const selectNote = async (note) => {
+                    try {
+                        const res = await fetch(`/api/notes/${note.id}`);
+                        currentNote.value = await res.json();
+                        isEditing.value = false;
+                    } catch (e) { console.error(e); }
+                };
+
+                const toggleEditMode = async () => {
+                    isEditing.value = !isEditing.value;
+                    if (isEditing.value) {
+                        editContent.value = currentNote.value.content || '';
+                        await nextTick();
+                        initEditor();
+                    }
+                };
+
+                const initEditor = async () => {
+                    if (!window.monaco) {
+                        const loader = document.createElement('script');
+                        loader.src = 'https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js';
+                        loader.onload = () => {
+                            require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
+                            require(['vs/editor/editor.main'], () => createEditor());
+                        };
+                        document.head.appendChild(loader);
+                    } else {
+                        createEditor();
+                    }
+                };
+
+                const createEditor = () => {
+                    const container = document.getElementById('monaco-editor');
+                    if (!container) return;
+                    if (editor.value) editor.value.dispose();
+
+                    monaco.editor.defineTheme('lava-dark', {
+                        base: 'vs-dark',
+                        inherit: true,
+                        rules: [],
+                        colors: { 'editor.background': '#1a1a1a' }
+                    });
+
+                    editor.value = monaco.editor.create(container, {
+                        value: editContent.value,
+                        language: 'markdown',
+                        theme: 'lava-dark',
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        wordWrap: 'on',
+                        lineNumbers: 'on',
+                        automaticLayout: true,
+                        padding: { top: 16 }
+                    });
+
+                    editor.value.onDidChangeModelContent(() => {
+                        editContent.value = editor.value.getValue();
+                        checkLLMTrigger();
+                    });
+                };
+
+                const checkLLMTrigger = () => {
+                    const content = editor.value?.getValue() || '';
+                    const match = content.match(/@llm\s+(.+)$/m);
+                    if (match && llmSettings.provider && llmSettings.apiKey) {
+                        llmPrompt.value = match[1].trim();
+                        showLLMPopup.value = true;
+                    }
+                };
+
+                const saveNote = async () => {
+                    if (!currentNote.value) return;
+                    try {
+                        const res = await fetch(`/api/notes/${currentNote.value.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: currentNote.value.name,
+                                content: editContent.value,
+                                icon: currentNote.value.icon
+                            })
+                        });
+                        if (res.ok) {
+                            currentNote.value = await res.json();
+                            isEditing.value = false;
+                            await loadNotes(currentCategory.value.id);
+                        }
+                    } catch (e) { console.error(e); }
+                };
+
+                const cancelEdit = () => {
+                    isEditing.value = false;
+                    editContent.value = '';
+                };
+
+                const confirmDelete = () => { showDeleteConfirm.value = true; };
+
+                const deleteNote = async () => {
+                    if (!currentNote.value) return;
+                    try {
+                        await fetch(`/api/notes/${currentNote.value.id}`, { method: 'DELETE' });
+                        currentNote.value = null;
+                        showDeleteConfirm.value = false;
+                        await loadNotes(currentCategory.value.id);
+                    } catch (e) { console.error(e); }
+                };
+
+                const openSettings = () => { showSettings.value = true; };
+                const closeSettings = () => { showSettings.value = false; };
+
+                const openCreateModal = () => {
+                    createForm.name = '';
+                    createForm.icon = currentCategory.value ? 'file-text' : 'folder';
+                    showCreateModal.value = true;
+                };
+                const closeCreateModal = () => { showCreateModal.value = false; };
+
+                const create = async () => {
+                    if (!createForm.name.trim()) return;
+                    try {
+                        if (currentCategory.value) {
+                            const res = await fetch('/api/notes', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    category_id: currentCategory.value.id,
+                                    name: createForm.name,
+                                    content: '',
+                                    icon: createForm.icon
+                                })
+                            });
+                            if (res.ok) {
+                                await loadNotes(currentCategory.value.id);
+                                closeCreateModal();
+                            }
+                        } else {
+                            const res = await fetch('/api/categories', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: createForm.name, icon: createForm.icon })
+                            });
+                            if (res.ok) {
+                                await loadCategories();
+                                closeCreateModal();
+                            }
+                        }
+                    } catch (e) { console.error(e); }
+                };
+
+                const applyHue = () => {
+                    document.documentElement.style.setProperty('--accent', `hsl(${30 + settings.hue_shift}, 70%, 65%)`);
+                    document.documentElement.style.setProperty('--accent-hover', `hsl(${30 + settings.hue_shift}, 75%, 70%)`);
+                    document.documentElement.style.setProperty('--accent-muted', `hsl(${30 + settings.hue_shift}, 55%, 55%)`);
+                };
+
+                const saveSettings = async () => {
+                    localStorage.setItem('lava-settings', JSON.stringify(settings));
+                    applyHue();
+                };
+
+                const saveAllSettings = () => {
+                    localStorage.setItem('lava-llm', JSON.stringify(llmSettings));
+                    saveSettings();
+                    closeSettings();
+                };
+
+                const loadSettings = () => {
+                    const saved = localStorage.getItem('lava-settings');
+                    if (saved) Object.assign(settings, JSON.parse(saved));
+                    const llm = localStorage.getItem('lava-llm');
+                    if (llm) Object.assign(llmSettings, JSON.parse(llm));
+                    applyHue();
+                };
+
+                const getDefaultModel = () => {
+                    const defaults = { gemini: 'gemini-pro', openai: 'gpt-4', claude: 'claude-3-sonnet-20240229' };
+                    return defaults[llmSettings.provider] || '';
+                };
+
+                const closeLLMPopup = () => { showLLMPopup.value = false; llmPrompt.value = ''; };
+
+                const askLLM = async (includeDoc) => {
+                    if (!llmSettings.provider || !llmSettings.apiKey) return;
+                    llmLoading.value = true;
+
+                    try {
+                        let response = '';
+                        const model = llmSettings.model || getDefaultModel();
+                        const prompt = includeDoc
+                            ? `Document:\n${editContent.value}\n\nQuestion: ${llmPrompt.value}`
+                            : llmPrompt.value;
+
+                        if (llmSettings.provider === 'openai') {
+                            const endpoint = llmSettings.endpoint || 'https://api.openai.com/v1';
+                            const res = await fetch(`${endpoint}/chat/completions`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${llmSettings.apiKey}` },
+                                body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+                            });
+                            const data = await res.json();
+                            response = data.choices?.[0]?.message?.content || '';
+                        } else if (llmSettings.provider === 'gemini') {
+                            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmSettings.apiKey}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                            });
+                            const data = await res.json();
+                            response = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                        } else if (llmSettings.provider === 'claude') {
+                            const res = await fetch('https://api.anthropic.com/v1/messages', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'x-api-key': llmSettings.apiKey,
+                                    'anthropic-version': '2023-06-01',
+                                    'anthropic-dangerous-direct-browser-access': 'true'
+                                },
+                                body: JSON.stringify({ model, max_tokens: 4096, messages: [{ role: 'user', content: prompt }] })
+                            });
+                            const data = await res.json();
+                            response = data.content?.[0]?.text || '';
+                        }
+
+                        if (response && editor.value) {
+                            const content = editor.value.getValue();
+                            const newContent = content.replace(/@llm\s+.+$/m, response);
+                            editor.value.setValue(newContent);
+                            editContent.value = newContent;
+                        }
+                    } catch (e) {
+                        console.error('LLM error:', e);
+                    }
+
+                    llmLoading.value = false;
+                    closeLLMPopup();
+                };
+
+                const checkAuth = async () => {
+                    try {
+                        const res = await fetch('/api/auth/check');
+                        const data = await res.json();
+                        isAuthenticated.value = data.authenticated;
+                    } catch (e) { console.error(e); }
+                };
+
+                onMounted(async () => {
+                    loadSettings();
+                    await checkAuth();
+                    await loadCategories();
+
+                    document.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('note-link')) {
+                            const notePath = e.target.dataset.note;
+                            const parts = notePath.split('/');
+                            if (parts.length === 2) {
+                                const cat = categories.value.find(c => c.name === parts[0]);
+                                if (cat) {
+                                    selectCategory(cat).then(() => {
+                                        const note = notes.value.find(n => stripMd(n.name) === parts[1]);
+                                        if (note) selectNote(note);
+                                    });
+                                }
+                            } else if (currentCategory.value) {
+                                const note = notes.value.find(n => stripMd(n.name) === parts[0]);
+                                if (note) selectNote(note);
+                            }
+                        }
+                    });
+                });
+
+                return {
+                    isPanelCollapsed, categories, notes, currentCategory, currentNote,
+                    isEditing, isAuthenticated, showSettings, showCreateModal, showDeleteConfirm,
+                    showLLMPopup, llmPrompt, llmLoading, settings, llmSettings, createForm,
+                    availableIcons, t, logoFilter, renderedMarkdown, stripMd, formatDate,
+                    togglePanel, selectCategory, goBack, selectNote, toggleEditMode,
+                    saveNote, cancelEdit, confirmDelete, deleteNote, openSettings, closeSettings,
+                    openCreateModal, closeCreateModal, create, applyHue, saveSettings,
+                    saveAllSettings, getDefaultModel, closeLLMPopup, askLLM
+                };
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>
