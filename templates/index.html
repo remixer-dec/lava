@@ -24,13 +24,30 @@
             --transition: 0.25s ease;
         }
 
-        .light-theme {
+        body.light-theme {
             --bg-primary: #f5f5f5;
             --bg-secondary: #ffffff;
             --bg-tertiary: #e8e8e8;
             --text-primary: #1a1a1a;
             --text-secondary: #666666;
             --border: #ddd;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
         }
 
         [v-cloak] { display: none !important; }
@@ -91,10 +108,6 @@
             flex-direction: column;
             position: relative;
             flex-shrink: 0;
-        }
-
-        .left-panel.animated {
-            transition: width var(--transition);
         }
 
         .left-panel.collapsed {
@@ -750,27 +763,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Transitions (optional) */
-        .slide-enter-active,
-        .slide-leave-active {
-            transition: all 0.2s ease;
-        }
-
-        .slide-enter-from {
-            opacity: 0;
-            transform: translateX(10px);
-        }
-
-        .slide-leave-to {
-            opacity: 0;
-            transform: translateX(-10px);
-        }
-
-        .no-transition .slide-enter-active,
-        .no-transition .slide-leave-active {
-            transition: none;
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
             .left-panel {
@@ -813,7 +805,7 @@
     </div>
 
     <div id="app" v-cloak>
-        <div class="app-container" :class="{ 'light-theme': settings.theme === 'light', 'no-transition': !settings.animatedNav }">
+        <div class="app-container">
             <!-- Panel Toggle (outside panel) -->
             <button class="panel-toggle" :class="{ collapsed: isPanelCollapsed }" @click="togglePanel"
                     :style="{ left: isPanelCollapsed ? '0' : 'var(--panel-width)' }">
@@ -821,7 +813,7 @@
             </button>
 
             <!-- Left Panel -->
-            <aside class="left-panel" :class="{ collapsed: isPanelCollapsed, animated: settings.animatedNav }">
+            <aside class="left-panel" :class="{ collapsed: isPanelCollapsed }">
                 <div class="panel-header">
                     <div class="logo-container">
                         <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
@@ -847,33 +839,31 @@
                         <span class="breadcrumb-current">{{ currentCategory.name }}</span>
                     </div>
 
-                    <component :is="settings.animatedNav ? 'transition' : 'div'" name="slide" mode="out-in">
-                        <div v-if="!currentCategory" key="categories" class="items-list">
-                            <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)">
-                                <div class="item-icon">
-                                    <i v-if="isDevicon(cat.icon)" :class="cat.icon"></i>
-                                    <svg v-else class="icon"><use :href="'#icon-' + (cat.icon || 'folder')"></use></svg>
-                                </div>
-                                <span class="item-name">{{ cat.name }}</span>
+                    <div v-if="!currentCategory" class="items-list">
+                        <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)">
+                            <div class="item-icon">
+                                <i v-if="isDevicon(cat.icon)" :class="cat.icon"></i>
+                                <svg v-else class="icon"><use :href="'#icon-' + (cat.icon || 'folder')"></use></svg>
                             </div>
-                            <div v-if="categories.length === 0" class="empty-state">{{ t('noCategories') }}</div>
+                            <span class="item-name">{{ cat.name }}</span>
                         </div>
+                        <div v-if="categories.length === 0" class="empty-state">{{ t('noCategories') }}</div>
+                    </div>
 
-                        <div v-else key="notes" class="items-list">
-                            <div v-for="note in filteredNotes" :key="note.id"
-                                 class="item" :class="{ active: currentNote && currentNote.id === note.id }"
-                                 @click="selectNote(note)"
-                                 @contextmenu.prevent="openContextMenu($event, note)"
-                                 :title="formatDate(note.updated_at)">
-                                <div class="item-icon">
-                                    <i v-if="isDevicon(note.icon)" :class="note.icon"></i>
-                                    <svg v-else class="icon"><use :href="'#icon-' + (note.icon || 'file-text')"></use></svg>
-                                </div>
-                                <span class="item-name">{{ displayNoteName(note.name) }}</span>
+                    <div v-else class="items-list">
+                        <div v-for="note in filteredNotes" :key="note.id"
+                             class="item" :class="{ active: currentNote && currentNote.id === note.id }"
+                             @click="selectNote(note)"
+                             @contextmenu.prevent="openContextMenu($event, note)"
+                             :title="formatDate(note.updated_at)">
+                            <div class="item-icon">
+                                <i v-if="isDevicon(note.icon)" :class="note.icon"></i>
+                                <svg v-else class="icon"><use :href="'#icon-' + (note.icon || 'file-text')"></use></svg>
                             </div>
-                            <div v-if="filteredNotes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
+                            <span class="item-name">{{ displayNoteName(note.name) }}</span>
                         </div>
-                    </component>
+                        <div v-if="filteredNotes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
+                    </div>
                 </div>
             </aside>
 
@@ -896,6 +886,9 @@
                             </div>
                         </div>
                         <div class="note-actions" v-if="isAuthenticated">
+                            <button class="icon-btn" @click="openLLMChat" :title="t('askLLM')" v-if="llmSettings.provider && llmSettings.apiKey">
+                                <svg class="icon"><use href="#icon-message-circle"></use></svg>
+                            </button>
                             <button class="icon-btn" @click="toggleEditMode" :title="isEditing ? t('view') : t('edit')">
                                 <svg class="icon"><use :href="isEditing ? '#icon-eye' : '#icon-edit-2'"></use></svg>
                             </button>
@@ -947,7 +940,7 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label>{{ t('theme') }}</label>
-                        <select v-model="settings.theme" @change="saveSettings">
+                        <select v-model="settings.theme" @change="applyHue">
                             <option value="dark">{{ t('dark') }}</option>
                             <option value="light">{{ t('light') }}</option>
                         </select>
@@ -962,12 +955,6 @@
                     <div class="form-group">
                         <label>{{ t('hueShift') }}: {{ settings.hue_shift }}°</label>
                         <input type="range" min="0" max="360" v-model.number="settings.hue_shift" @input="applyHue">
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" v-model="settings.animatedNav" @change="saveSettings">
-                            {{ t('animatedNav') }}
-                        </label>
                     </div>
 
                     <hr>
@@ -1048,10 +1035,15 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="llm-prompt">"{{ llmPrompt }}"</p>
-                    <div v-if="!llmLoading" class="llm-options">
-                        <button class="btn" @click="askLLM(false)">{{ t('askPromptOnly') }}</button>
-                        <button class="btn btn-primary" @click="askLLM(true)">{{ t('askWithDocument') }}</button>
+                    <div v-if="!llmLoading">
+                        <div class="form-group">
+                            <label>{{ t('prompt') }}</label>
+                            <textarea v-model="llmPrompt" rows="3" :placeholder="t('enterPrompt')"></textarea>
+                        </div>
+                        <div class="llm-options">
+                            <button class="btn" @click="askLLM(false)" :disabled="!llmPrompt.trim()">{{ t('askPromptOnly') }}</button>
+                            <button class="btn btn-primary" @click="askLLM(true)" :disabled="!llmPrompt.trim()">{{ t('askWithDocument') }}</button>
+                        </div>
                     </div>
                     <div v-else class="llm-loading">
                         <div class="spinner"></div>
@@ -1134,6 +1126,9 @@
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="2" y1="12" x2="22" y2="12"></line>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </symbol>
+        <symbol id="icon-message-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
         </symbol>
         <symbol id="icon-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="16 18 22 12 16 6"></polyline>
@@ -1218,6 +1213,8 @@
                 endpoint: 'Custom Endpoint',
                 model: 'Model',
                 askLLM: 'Ask LLM',
+                prompt: 'Prompt',
+                enterPrompt: 'What would you like to ask?',
                 askPromptOnly: 'Ask (prompt only)',
                 askWithDocument: 'Ask (with document)',
                 thinking: 'Thinking...',
@@ -1262,6 +1259,8 @@
                 endpoint: 'Свой endpoint',
                 model: 'Модель',
                 askLLM: 'Спросить LLM',
+                prompt: 'Промпт',
+                enterPrompt: 'Что вы хотите спросить?',
                 askPromptOnly: 'Спросить (только промпт)',
                 askWithDocument: 'Спросить (с документом)',
                 thinking: 'Думаю...',
@@ -1283,7 +1282,6 @@
                 const isAuthenticated = ref(false);
                 const editContent = ref('');
                 const editor = ref(null);
-                const llmDebounceTimer = ref(null);
 
                 const showSettings = ref(false);
                 const showCreateModal = ref(false);
@@ -1302,8 +1300,7 @@
                 const settings = reactive({
                     theme: 'dark',
                     language: 'en',
-                    hue_shift: 0,
-                    animatedNav: false
+                    hue_shift: 0
                 });
 
                 const llmSettings = reactive({
@@ -1330,10 +1327,12 @@
                     return `hue-rotate(${settings.hue_shift}deg)`;
                 });
 
-                // Filter notes by language suffix
+                // Filter notes by language suffix (only for non-authenticated/reader users)
                 // Notes without suffix = English (default), notes with __xx = that language only
                 const filteredNotes = computed(() => {
-                    if (isEditing.value) return notes.value;
+                    // Authenticated users see all notes
+                    if (isAuthenticated.value) return notes.value;
+                    // Non-authenticated users see language-filtered notes
                     return notes.value.filter(note => {
                         const name = note.name || '';
                         const langMatch = name.match(/__([a-z]{2})(?:\.md)?$/i);
@@ -1466,20 +1465,12 @@
 
                     editor.value.onDidChangeModelContent(() => {
                         editContent.value = editor.value.getValue();
-                        // Debounced LLM trigger check
-                        if (llmDebounceTimer.value) clearTimeout(llmDebounceTimer.value);
-                        llmDebounceTimer.value = setTimeout(checkLLMTrigger, 500);
                     });
                 };
 
-                const checkLLMTrigger = () => {
-                    if (showLLMPopup.value) return;
-                    const content = editor.value?.getValue() || '';
-                    const match = content.match(/@llm\s+(.+)$/m);
-                    if (match && llmSettings.provider && llmSettings.apiKey) {
-                        llmPrompt.value = match[1].trim();
-                        showLLMPopup.value = true;
-                    }
+                const openLLMChat = () => {
+                    llmPrompt.value = '';
+                    showLLMPopup.value = true;
                 };
 
                 const saveNote = async () => {
@@ -1677,10 +1668,21 @@
                     } catch (e) { console.error(e); }
                 };
 
-                const applyHue = () => {
+                const applyTheme = () => {
+                    // Apply theme to body
+                    if (settings.theme === 'light') {
+                        document.body.classList.add('light-theme');
+                    } else {
+                        document.body.classList.remove('light-theme');
+                    }
+                    // Apply hue
                     document.documentElement.style.setProperty('--accent', `hsl(${30 + settings.hue_shift}, 70%, 65%)`);
                     document.documentElement.style.setProperty('--accent-hover', `hsl(${30 + settings.hue_shift}, 75%, 70%)`);
                     document.documentElement.style.setProperty('--accent-muted', `hsl(${30 + settings.hue_shift}, 55%, 55%)`);
+                };
+
+                const applyHue = () => {
+                    applyTheme();
                     saveSettings();
                 };
 
@@ -1699,7 +1701,7 @@
                     if (saved) Object.assign(settings, JSON.parse(saved));
                     const llm = localStorage.getItem('lava-llm');
                     if (llm) Object.assign(llmSettings, JSON.parse(llm));
-                    applyHue();
+                    applyTheme();
                 };
 
                 const getDefaultModel = () => {
@@ -1753,10 +1755,12 @@
                         }
 
                         if (response && editor.value) {
-                            const content = editor.value.getValue();
-                            const newContent = content.replace(/@llm\s+.+$/m, response);
-                            editor.value.setValue(newContent);
-                            editContent.value = newContent;
+                            // Insert response at cursor position or append
+                            const selection = editor.value.getSelection();
+                            const id = { major: 1, minor: 1 };
+                            const op = { identifier: id, range: selection, text: response, forceMoveMarkers: true };
+                            editor.value.executeEdits("llm-insert", [op]);
+                            editContent.value = editor.value.getValue();
                         }
                     } catch (e) {
                         console.error('LLM error:', e);
@@ -1822,7 +1826,7 @@
                     openContextMenu, closeContextMenu, deleteContextNote, translateNote,
                     openSettings, closeSettings, openCreateModal, closeCreateModal,
                     updateCustomIcon, create, applyHue, saveSettings, saveAllSettings,
-                    getDefaultModel, closeLLMPopup, askLLM
+                    getDefaultModel, closeLLMPopup, askLLM, openLLMChat
                 };
             }
         });
