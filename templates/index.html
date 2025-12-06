@@ -134,40 +134,47 @@
                 </div>
 
                 <div class="panel-content">
-                    <div class="breadcrumb" v-if="currentCategory">
-                        <button class="breadcrumb-btn" @click="goBack">
-                            <i class="icon light-icon-arrow-left"></i>
-                            <span>{{ t('categories') }}</span>
-                        </button>
-                        <span class="breadcrumb-current">{{ currentCategory.name }}</span>
-                    </div>
-
-                    <div v-if="!currentCategory" class="items-list">
-                        <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)"
-                            @contextmenu.prevent="openCategoryContextMenu($event, cat)">
-                            <div class="item-icon">
-                                <i v-if="isDevicon(cat.icon)" :class="cat.icon"></i>
-                                <i v-else :class="'icon light-icon-' + (cat.icon || 'folder')"></i>
-                            </div>
-                            <span class="item-name">{{ cat.name }}</span>
-                        </div>
-                        <div v-if="categories.length === 0" class="empty-state">{{ t('noCategories') }}</div>
-                    </div>
-
-                    <transition name="slide-fade" mode="out-in">
-                        <div v-if="currentCategory" :key="currentCategory.id" class="items-list" :class="{ loading: notesLoading }">
-                            <div v-for="note in filteredNotes" :key="note.id" class="item"
-                                :class="{ active: currentNote && currentNote.id === note.id }" @click="selectNote(note)"
-                                @contextmenu.prevent="openContextMenu($event, note)" :title="formatDate(note.updated_at)">
-                                <div class="item-icon">
-                                    <i v-if="isDevicon(note.icon)" :class="note.icon"></i>
-                                    <i v-else :class="'icon light-icon-' + (note.icon || 'file-text')"></i>
-                                </div>
-                                <span class="item-name">{{ displayNoteName(note.name) }}</span>
-                            </div>
-                            <div v-if="filteredNotes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
+                    <transition name="breadcrumb-slide">
+                        <div class="breadcrumb" v-if="currentCategory" :key="currentCategory.id">
+                            <button class="breadcrumb-btn" @click="goBack">
+                                <i class="icon light-icon-arrow-left"></i>
+                                <span>{{ t('categories') }}</span>
+                            </button>
+                            <span class="breadcrumb-current">{{ currentCategory.name }}</span>
                         </div>
                     </transition>
+
+                    <div class="panel-lists-container">
+                        <transition name="slide-left">
+                            <div v-if="!currentCategory" key="categories" class="items-list">
+                                <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)"
+                                    @contextmenu.prevent="openCategoryContextMenu($event, cat)">
+                                    <div class="item-icon">
+                                        <i v-if="isDevicon(cat.icon)" :class="cat.icon"></i>
+                                        <i v-else :class="'icon light-icon-' + (cat.icon || 'folder')"></i>
+                                    </div>
+                                    <span class="item-name">{{ cat.name }}</span>
+                                </div>
+                                <div v-if="categories.length === 0" class="empty-state">{{ t('noCategories') }}</div>
+                            </div>
+                        </transition>
+
+                        <transition name="slide-right">
+                            <div v-if="currentCategory" :key="'notes-' + currentCategory.id" class="items-list" :class="{ loading: notesLoading }">
+                                <div v-for="note in filteredNotes" :key="note.id" class="item"
+                                    :class="{ active: currentNote && currentNote.id === note.id }" @click="selectNote(note)"
+                                    @contextmenu.prevent="openContextMenu($event, note)" :title="formatDate(note.updated_at)">
+                                    <div class="item-icon">
+                                        <i v-if="isDevicon(note.icon)" :class="note.icon"></i>
+                                        <i v-else :class="'icon light-icon-' + (note.icon || 'file-text')"></i>
+                                    </div>
+                                    <span class="item-name">{{ displayNoteName(note.name) }}</span>
+                                    <span v-if="getNoteLangCode(note.name)" class="item-lang-badge">{{ getNoteLangCode(note.name) }}</span>
+                                </div>
+                                <div v-if="filteredNotes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
+                            </div>
+                        </transition>
+                    </div>
                 </div>
             </aside>
 
@@ -188,7 +195,10 @@
                                     :placeholder="t('enterName')">
                                 <span v-if="getNoteLangCode(currentNote.name)" class="lang-code-badge">{{ getNoteLangCode(currentNote.name) }}</span>
                             </div>
-                            <h1 v-else class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
+                            <div v-else class="note-title-row">
+                                <h1 class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
+                                <span v-if="isAuthenticated && getNoteLangCode(currentNote.name)" class="lang-code-badge">{{ getNoteLangCode(currentNote.name) }}</span>
+                            </div>
                         </div>
                         <div class="note-actions" v-if="isAuthenticated">
                             <button class="icon-btn" @click="openLLMChat" :title="t('askLLM')">
@@ -1532,11 +1542,14 @@
                     } catch (e) {console.error(e);}
                 };
 
-                // Syntax highlighting for code blocks
+                // Syntax highlighting for code blocks using syntax-highlight-element
                 let syntaxHighlightLoaded = false;
                 const loadSyntaxHighlight = async () => {
                     if (syntaxHighlightLoaded) return;
                     try {
+                        // Load the theme CSS
+                        await addStyle('https://cdn.jsdelivr.net/npm/syntax-highlight-element@1/dist/themes/prettylights.min.css');
+                        // Load the web component
                         await import('https://cdn.jsdelivr.net/npm/syntax-highlight-element@1/+esm');
                         syntaxHighlightLoaded = true;
                     } catch (e) { console.error('Failed to load syntax-highlight-element', e); }
@@ -1544,19 +1557,26 @@
 
                 const applySyntaxHighlight = async () => {
                     await nextTick();
-                    const codeBlocks = document.querySelectorAll('.markdown-content pre code');
+                    const codeBlocks = document.querySelectorAll('.markdown-content pre code:not([data-highlighted])');
                     if (codeBlocks.length === 0) return;
 
                     await loadSyntaxHighlight();
                     codeBlocks.forEach(block => {
-                        if (block.hasAttribute('data-highlighted')) return;
-                        const wrapper = document.createElement('syntax-highlight');
-                        const lang = block.className.match(/language-(\w+)/)?.[1] || 'text';
-                        wrapper.setAttribute('language', lang);
-                        wrapper.textContent = block.textContent;
-                        block.innerHTML = '';
-                        block.appendChild(wrapper);
-                        block.setAttribute('data-highlighted', 'true');
+                        // Map common language names to supported ones (html|css|js)
+                        let lang = block.className.match(/language-(\w+)/)?.[1] || 'js';
+                        if (['javascript', 'typescript', 'ts', 'jsx', 'tsx'].includes(lang)) lang = 'js';
+                        if (['htm', 'xml', 'svg', 'vue'].includes(lang)) lang = 'html';
+                        if (['scss', 'sass', 'less'].includes(lang)) lang = 'css';
+
+                        const code = block.textContent;
+                        const pre = block.parentElement;
+
+                        // Create syntax-highlight element and replace the pre>code structure
+                        const syntaxEl = document.createElement('syntax-highlight');
+                        syntaxEl.setAttribute('language', lang);
+                        syntaxEl.textContent = code;
+
+                        pre.replaceWith(syntaxEl);
                     });
                 };
 

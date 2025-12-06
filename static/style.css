@@ -124,8 +124,9 @@ i.icon {
 
 .panel-content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .breadcrumb {
@@ -890,27 +891,81 @@ h3 {
   background: var(--text-secondary);
 }
 
-/* Vue Transitions */
-.slide-fade-enter-active {
-  transition: all 0.3s ease-out;
+/* Panel Lists Container */
+.panel-lists-container {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
 }
 
-.slide-fade-leave-active {
-  transition: all 0.2s ease-in;
+.panel-lists-container .items-list {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
 }
 
-.slide-fade-enter-from {
-  transform: translateX(20px);
+/* Vue Transitions - Slide Left (categories leaving) */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(-100%);
   opacity: 0;
 }
 
-.slide-fade-leave-to {
-  transform: translateX(-20px);
+.slide-left-leave-to {
+  transform: translateX(-100%);
   opacity: 0;
+}
+
+/* Vue Transitions - Slide Right (notes entering) */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.slide-right-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.slide-right-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Vue Transitions - Breadcrumb */
+.breadcrumb-slide-enter-active,
+.breadcrumb-slide-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease, max-height 0.3s ease;
+  overflow: hidden;
+}
+
+.breadcrumb-slide-enter-from {
+  transform: translateX(30px);
+  opacity: 0;
+  max-height: 0;
+}
+
+.breadcrumb-slide-enter-to,
+.breadcrumb-slide-leave-from {
+  max-height: 60px;
+}
+
+.breadcrumb-slide-leave-to {
+  transform: translateX(30px);
+  opacity: 0;
+  max-height: 0;
 }
 
 /* Language Code Badge */
-.note-title-edit-row {
+.note-title-edit-row,
+.note-title-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -926,6 +981,25 @@ h3 {
   font-weight: 600;
   text-transform: uppercase;
   flex-shrink: 0;
+}
+
+/* Sidebar item language badge */
+.item-lang-badge {
+  background: var(--accent-muted);
+  color: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.item:hover .item-lang-badge,
+.item.active .item-lang-badge {
+  opacity: 1;
 }
 
 /* Draft Recovery Banner */
