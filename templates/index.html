@@ -283,6 +283,23 @@
 
         .items-list {
             padding: 8px;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .items-list.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .items-list-enter {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        .items-list-enter-active {
+            opacity: 1;
+            transform: translateX(0);
+            transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
         .item {
@@ -428,6 +445,118 @@
             font-size: 22px;
             font-weight: 600;
             margin-bottom: 6px;
+        }
+
+        .note-title-input {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--accent);
+            color: var(--text-primary);
+            outline: none;
+            width: 100%;
+            padding: 0;
+            font-family: inherit;
+        }
+
+        .formatting-toolbar {
+            display: flex;
+            gap: 4px;
+            padding: 8px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            flex-wrap: wrap;
+        }
+
+        .formatting-toolbar .icon-btn {
+            width: 28px;
+            height: 28px;
+        }
+
+        .formatting-toolbar .icon-btn .icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            background: var(--border);
+            margin: 0 4px;
+        }
+
+        .preview-content {
+            max-width: 1000px;
+            line-height: 1.7;
+            margin: 0 auto;
+            padding: 24px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+
+        .delete-modal-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            margin: 0 auto 16px;
+            display: block;
+        }
+
+        .delete-modal-text {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* Find Replace Modal */
+        .find-replace-modal {
+            max-width: 500px;
+        }
+
+        .find-replace-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .find-replace-row input {
+            flex: 1;
+        }
+
+        .find-replace-options {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .find-replace-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* Link suggestions */
+        .link-suggestions {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 300;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .link-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .link-suggestion:hover {
+            background: var(--bg-tertiary);
         }
 
         .note-meta {
@@ -930,7 +1059,7 @@
                         <div v-if="categories.length === 0" class="empty-state">{{ t('noCategories') }}</div>
                     </div>
 
-                    <div v-else class="items-list">
+                    <div v-else class="items-list" :class="{ loading: notesLoading }">
                         <div v-for="note in filteredNotes" :key="note.id" class="item"
                             :class="{ active: currentNote && currentNote.id === note.id }" @click="selectNote(note)"
                             @contextmenu.prevent="openContextMenu($event, note)" :title="formatDate(note.updated_at)">
@@ -959,7 +1088,8 @@
                 <div v-else class="note-view">
                     <div class="note-header">
                         <div class="note-title-section">
-                            <h1 class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
+                            <input v-if="isEditing" type="text" class="note-title-input" v-model="editTitle" :placeholder="t('enterName')">
+                            <h1 v-else class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
                             <div class="note-meta">
                                 <span>{{ t('created') }}: {{ formatDate(currentNote.created_at) }}</span>
                                 <span>{{ t('updated') }}: {{ formatDate(currentNote.updated_at) }}</span>
@@ -971,9 +1101,14 @@
                                     <use href="#icon-message-circle"></use>
                                 </svg>
                             </button>
+                            <button v-if="isEditing" class="icon-btn" @click="togglePreview" :title="showPreview ? t('hidePreview') : t('showPreview')">
+                                <svg class="icon">
+                                    <use :href="showPreview ? '#icon-eye-off' : '#icon-eye'"></use>
+                                </svg>
+                            </button>
                             <button class="icon-btn" @click="toggleEditMode" :title="isEditing ? t('view') : t('edit')">
                                 <svg class="icon">
-                                    <use :href="isEditing ? '#icon-eye' : '#icon-edit-2'"></use>
+                                    <use :href="isEditing ? '#icon-x' : '#icon-edit-2'"></use>
                                 </svg>
                             </button>
                             <button class="icon-btn danger" @click="confirmDelete" :title="t('delete')">
@@ -984,12 +1119,44 @@
                         </div>
                     </div>
 
+                    <!-- Formatting Toolbar (visible only in edit mode) -->
+                    <div v-if="isEditing && !showPreview" class="formatting-toolbar">
+                        <button class="icon-btn" @click="insertFormat('bold')" title="Bold (Ctrl+B)">
+                            <svg class="icon"><use href="#icon-bold"></use></svg>
+                        </button>
+                        <button class="icon-btn" @click="insertFormat('italic')" title="Italic (Ctrl+I)">
+                            <svg class="icon"><use href="#icon-italic"></use></svg>
+                        </button>
+                        <button class="icon-btn" @click="insertFormat('underline')" title="Underline">
+                            <svg class="icon"><use href="#icon-underline"></use></svg>
+                        </button>
+                        <div class="toolbar-separator"></div>
+                        <button class="icon-btn" @click="insertFormat('subscript')" title="Subscript">
+                            <svg class="icon"><use href="#icon-subscript"></use></svg>
+                        </button>
+                        <button class="icon-btn" @click="insertFormat('superscript')" title="Superscript">
+                            <svg class="icon"><use href="#icon-superscript"></use></svg>
+                        </button>
+                        <div class="toolbar-separator"></div>
+                        <button class="icon-btn" @click="showLinkModal = true" title="Insert Link">
+                            <svg class="icon"><use href="#icon-link"></use></svg>
+                        </button>
+                        <button class="icon-btn" @click="insertFormat('image')" title="Insert Image">
+                            <svg class="icon"><use href="#icon-image"></use></svg>
+                        </button>
+                        <div class="toolbar-separator"></div>
+                        <button class="icon-btn" @click="showFindReplace = true" title="Find & Replace">
+                            <svg class="icon"><use href="#icon-search"></use></svg>
+                        </button>
+                    </div>
+
                     <div class="note-content">
-                        <div v-if="isEditing" class="editor-container">
+                        <div v-if="isEditing && !showPreview" class="editor-container">
                             <vue-monaco-editor v-model:value="editContent" :theme="computedTheme"
                                 :options="editorOptions" language="markdown" height="80vh"
-                                @before-mount="handleBeforeMount"></vue-monaco-editor>
+                                @before-mount="handleBeforeMount" @mount="handleEditorMount"></vue-monaco-editor>
                         </div>
+                        <div v-else-if="isEditing && showPreview" class="markdown-content preview-content" v-html="previewMarkdown"></div>
                         <div v-else class="markdown-content" v-html="renderedMarkdown"></div>
                     </div>
 
@@ -1009,6 +1176,12 @@
         <!-- Context Menu -->
         <div v-if="contextMenu.visible" class="context-menu"
             :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
+            <div class="context-menu-item" @click="cloneNote" v-if="isAuthenticated">
+                <svg class="icon">
+                    <use href="#icon-copy"></use>
+                </svg>
+                {{ t('clone') }}
+            </div>
             <div class="context-menu-item" @click="translateNote" v-if="isAuthenticated">
                 <svg class="icon">
                     <use href="#icon-globe"></use>
@@ -1164,13 +1337,78 @@
             <div class="modal modal-small">
                 <div class="modal-header">
                     <h2>{{ t('confirmDelete') }}</h2>
+                    <button class="icon-btn" @click="showDeleteConfirm = false">
+                        <svg class="icon"><use href="#icon-x"></use></svg>
+                    </button>
                 </div>
                 <div class="modal-body">
-                    <p>{{ t('deleteWarning') }}</p>
+                    <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
+                        alt="Lava" class="delete-modal-logo" :style="{ filter: logoFilter }">
+                    <p class="delete-modal-text">{{ t('deleteWarningLava') }}<br><strong v-if="noteToDelete">{{ displayNoteName(noteToDelete.name) }}</strong></p>
                 </div>
                 <div class="modal-footer">
                     <button class="btn" @click="showDeleteConfirm = false">{{ t('cancel') }}</button>
-                    <button class="btn btn-danger" @click="deleteNote">{{ t('delete') }}</button>
+                    <button class="btn btn-danger" @click="deleteNote">{{ t('throwIntoLava') }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Link Insert Modal -->
+        <div class="modal-overlay" v-if="showLinkModal" @click.self="showLinkModal = false">
+            <div class="modal modal-small">
+                <div class="modal-header">
+                    <h2>{{ t('insertLink') }}</h2>
+                    <button class="icon-btn" @click="showLinkModal = false">
+                        <svg class="icon"><use href="#icon-x"></use></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>{{ t('linkText') }}</label>
+                        <input type="text" v-model="linkForm.text" :placeholder="t('linkTextPlaceholder')">
+                    </div>
+                    <div class="form-group">
+                        <label>{{ t('linkUrl') }}</label>
+                        <input type="text" v-model="linkForm.url" placeholder="https:// or [[note-name]]" @input="onLinkInput">
+                        <div v-if="linkSuggestions.length > 0" class="link-suggestions">
+                            <div v-for="note in linkSuggestions" :key="note.id" class="link-suggestion" @click="selectLinkSuggestion(note)">
+                                {{ displayNoteName(note.name) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" @click="showLinkModal = false">{{ t('cancel') }}</button>
+                    <button class="btn btn-primary" @click="insertLink">{{ t('insert') }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Find & Replace Modal -->
+        <div class="modal-overlay" v-if="showFindReplace" @click.self="showFindReplace = false">
+            <div class="modal find-replace-modal">
+                <div class="modal-header">
+                    <h2>{{ t('findReplace') }}</h2>
+                    <button class="icon-btn" @click="showFindReplace = false">
+                        <svg class="icon"><use href="#icon-x"></use></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="find-replace-row">
+                        <input type="text" v-model="findReplaceForm.find" :placeholder="t('findPlaceholder')">
+                    </div>
+                    <div class="find-replace-row">
+                        <input type="text" v-model="findReplaceForm.replace" :placeholder="t('replacePlaceholder')">
+                    </div>
+                    <div class="find-replace-options">
+                        <label><input type="checkbox" v-model="findReplaceForm.regex"> {{ t('useRegex') }}</label>
+                        <label><input type="checkbox" v-model="findReplaceForm.caseSensitive"> {{ t('caseSensitive') }}</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" @click="findNext">{{ t('findNext') }}</button>
+                    <button class="btn" @click="replaceOne">{{ t('replaceOne') }}</button>
+                    <button class="btn btn-primary" @click="replaceAll">{{ t('replaceAll') }}</button>
                 </div>
             </div>
         </div>
@@ -1302,6 +1540,60 @@
             <polyline points="2 17 12 22 22 17"></polyline>
             <polyline points="2 12 12 17 22 12"></polyline>
         </symbol>
+        <symbol id="icon-bold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
+            <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
+        </symbol>
+        <symbol id="icon-italic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="4" x2="10" y2="4"></line>
+            <line x1="14" y1="20" x2="5" y2="20"></line>
+            <line x1="15" y1="4" x2="9" y2="20"></line>
+        </symbol>
+        <symbol id="icon-underline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path>
+            <line x1="4" y1="21" x2="20" y2="21"></line>
+        </symbol>
+        <symbol id="icon-subscript" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m4 5 8 8"></path>
+            <path d="m12 5-8 8"></path>
+            <path d="M20 19h-4c0-1.5.44-2 1.5-2.5S20 15.33 20 14c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"></path>
+        </symbol>
+        <symbol id="icon-superscript" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m4 19 8-8"></path>
+            <path d="m12 19-8-8"></path>
+            <path d="M20 12h-4c0-1.5.44-2 1.5-2.5S20 8.33 20 7c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"></path>
+        </symbol>
+        <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </symbol>
+        <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+        </symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </symbol>
+        <symbol id="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+        </symbol>
     </svg>
     <script type="importmap">
     {
@@ -1342,8 +1634,11 @@
                 view: 'View',
                 delete: 'Delete',
                 translate: 'Translate',
+                clone: 'Clone',
                 confirmDelete: 'Confirm Delete',
                 deleteWarning: 'Are you sure you want to delete this note? This action cannot be undone.',
+                deleteWarningLava: 'Do you want to throw this into lava?',
+                throwIntoLava: 'Throw into lava',
                 created: 'Created',
                 updated: 'Updated',
                 settings: 'Settings',
@@ -1364,7 +1659,24 @@
                 askPromptOnly: 'Ask (prompt only)',
                 askWithDocument: 'Ask (with document)',
                 thinking: 'Thinking...',
-                translating: 'Translating...'
+                translating: 'Translating...',
+                showPreview: 'Show Preview',
+                hidePreview: 'Hide Preview',
+                insertLink: 'Insert Link',
+                linkText: 'Link Text',
+                linkTextPlaceholder: 'Display text...',
+                linkUrl: 'URL or Note Name',
+                insert: 'Insert',
+                findReplace: 'Find & Replace',
+                findPlaceholder: 'Find...',
+                replacePlaceholder: 'Replace with...',
+                useRegex: 'Regex',
+                caseSensitive: 'Case sensitive',
+                findNext: 'Find',
+                replaceOne: 'Replace',
+                replaceAll: 'Replace All',
+                noteNotFound: 'Note not found',
+                noteDeleted: 'This note has been deleted or does not exist.'
             },
             ru: {
                 appName: 'Lava Notes',
@@ -1388,8 +1700,11 @@
                 view: 'Просмотр',
                 delete: 'Удалить',
                 translate: 'Перевести',
+                clone: 'Клонировать',
                 confirmDelete: 'Подтвердите удаление',
                 deleteWarning: 'Вы уверены, что хотите удалить эту заметку? Это действие нельзя отменить.',
+                deleteWarningLava: 'Хотите бросить это в лаву?',
+                throwIntoLava: 'Бросить в лаву',
                 created: 'Создано',
                 updated: 'Обновлено',
                 settings: 'Настройки',
@@ -1410,7 +1725,24 @@
                 askPromptOnly: 'Спросить (только промпт)',
                 askWithDocument: 'Спросить (с документом)',
                 thinking: 'Думаю...',
-                translating: 'Перевожу...'
+                translating: 'Перевожу...',
+                showPreview: 'Показать превью',
+                hidePreview: 'Скрыть превью',
+                insertLink: 'Вставить ссылку',
+                linkText: 'Текст ссылки',
+                linkTextPlaceholder: 'Отображаемый текст...',
+                linkUrl: 'URL или имя заметки',
+                insert: 'Вставить',
+                findReplace: 'Найти и заменить',
+                findPlaceholder: 'Найти...',
+                replacePlaceholder: 'Заменить на...',
+                useRegex: 'Regex',
+                caseSensitive: 'Учитывать регистр',
+                findNext: 'Найти',
+                replaceOne: 'Заменить',
+                replaceAll: 'Заменить все',
+                noteNotFound: 'Заметка не найдена',
+                noteDeleted: 'Эта заметка была удалена или не существует.'
             }
         };
 
@@ -1427,14 +1759,21 @@
                 const isEditing = ref(false);
                 const isAuthenticated = ref(false);
                 const editContent = ref('');
+                const editTitle = ref('');
                 const editor = ref(null);
+                const monacoEditor = ref(null);
 
                 const showSettings = ref(false);
                 const showCreateModal = ref(false);
                 const showDeleteConfirm = ref(false);
                 const showLLMPopup = ref(false);
+                const showPreview = ref(false);
+                const showLinkModal = ref(false);
+                const showFindReplace = ref(false);
                 const llmPrompt = ref('');
                 const llmLoading = ref(false);
+                const linkSuggestions = ref([]);
+                const notesLoading = ref(false);
 
                 const contextMenu = reactive({
                     visible: false,
@@ -1460,6 +1799,18 @@
                     name: '',
                     icon: 'folder',
                     customIcon: ''
+                });
+
+                const linkForm = reactive({
+                    text: '',
+                    url: ''
+                });
+
+                const findReplaceForm = reactive({
+                    find: '',
+                    replace: '',
+                    regex: false,
+                    caseSensitive: false
                 });
 
                 const editorOptions = {
@@ -1536,6 +1887,16 @@
                     return marked.parse(content);
                 });
 
+                const previewMarkdown = computed(() => {
+                    if (!editContent.value) return '';
+                    let content = editContent.value;
+                    content = content.replace(/\[\[([^\]]+)\]\]/g, (match, name) => {
+                        const parts = name.split('/');
+                        return `<a class="note-link" data-note="${name}">${parts[parts.length - 1]}</a>`;
+                    });
+                    return marked.parse(content);
+                });
+
                 const formatDate = (date) => {
                     if (!date) return '';
                     return new Date(date).toLocaleDateString(settings.language === 'ru' ? 'ru-RU' : 'en-US', {
@@ -1560,10 +1921,14 @@
                 };
 
                 const selectCategory = async (cat) => {
+                    notesLoading.value = true;
                     currentCategory.value = cat;
                     currentNote.value = null;
                     isEditing.value = false;
+                    showPreview.value = false;
                     await loadNotes(cat.id);
+                    notesLoading.value = false;
+                    updateURL();
                 };
 
                 const goBack = () => {
@@ -1571,22 +1936,94 @@
                     currentNote.value = null;
                     notes.value = [];
                     isEditing.value = false;
+                    showPreview.value = false;
+                    updateURL();
+                    updatePageTitle();
                 };
 
                 const selectNote = async (note) => {
                     try {
-                        currentNote.value = {id: -1, name: note.name.value, content: 'Loading', icon: note.icon.value}
-                        const res = await fetchOnce(`api/notes/${note.id}`);
+                        currentNote.value = {id: -1, name: note.name, content: 'Loading...', icon: note.icon};
+                        const res = await fetch(`api/notes/${note.id}`);
+                        if (res.status === 404) {
+                            currentNote.value = null;
+                            alert(t('noteDeleted'));
+                            await loadNotes(currentCategory.value.id);
+                            return;
+                        }
                         currentNote.value = await res.json();
                         isEditing.value = false;
+                        showPreview.value = false;
+                        updateURL();
+                        updatePageTitle();
                     } catch (e) {console.error(e);}
                 };
 
                 const toggleEditMode = async () => {
                     isEditing.value = !isEditing.value;
+                    showPreview.value = false;
                     if (isEditing.value) {
                         editContent.value = currentNote.value.content || '';
+                        editTitle.value = displayNoteName(currentNote.value.name);
                         await nextTick();
+                    }
+                };
+
+                const togglePreview = () => {
+                    showPreview.value = !showPreview.value;
+                };
+
+                const handleEditorMount = (editorInstance) => {
+                    monacoEditor.value = editorInstance;
+                };
+
+                // URL routing
+                const getBasePath = () => {
+                    const path = window.location.pathname;
+                    const match = path.match(/^(.*?)\/note\/|^(.*?)$/);
+                    return match ? (match[1] || match[2] || '') : '';
+                };
+
+                const updateURL = () => {
+                    const basePath = getBasePath();
+                    if (currentNote.value && currentNote.value.id > 0) {
+                        const title = encodeURIComponent(displayNoteName(currentNote.value.name));
+                        const newPath = `${basePath}/note/${currentNote.value.id}/${title}`;
+                        window.history.pushState({noteId: currentNote.value.id}, '', newPath);
+                    } else if (currentCategory.value) {
+                        window.history.pushState({}, '', basePath || '/');
+                    } else {
+                        window.history.pushState({}, '', basePath || '/');
+                    }
+                };
+
+                const updatePageTitle = () => {
+                    if (currentNote.value && currentNote.value.name) {
+                        document.title = `${displayNoteName(currentNote.value.name)} - Lava Notes`;
+                    } else {
+                        document.title = 'Lava Notes';
+                    }
+                };
+
+                const parseURLAndNavigate = async () => {
+                    const path = window.location.pathname;
+                    const match = path.match(/\/note\/(\d+)/);
+                    if (match) {
+                        const noteId = parseInt(match[1], 10);
+                        try {
+                            const res = await fetch(`api/notes/${noteId}`);
+                            if (res.ok) {
+                                const note = await res.json();
+                                // Find and select category
+                                const cat = categories.value.find(c => c.id === note.category_id);
+                                if (cat) {
+                                    currentCategory.value = cat;
+                                    await loadNotes(cat.id);
+                                }
+                                currentNote.value = note;
+                                updatePageTitle();
+                            }
+                        } catch (e) {console.error(e);}
                     }
                 };
 
@@ -1616,13 +2053,21 @@
 
                 const saveNote = async () => {
                     if (!currentNote.value) return;
-                    fetchCache.delete(`api/notes/${currentNote.value.id}`)
+                    cache.delete(`api/notes/${currentNote.value.id}`);
                     try {
+                        // Reconstruct the full name with language suffix if present
+                        const oldName = currentNote.value.name || '';
+                        const langMatch = oldName.match(/__([a-z]{2})(?:\.md)?$/i);
+                        let newName = editTitle.value.trim();
+                        if (langMatch) {
+                            newName = `${newName}__${langMatch[1]}`;
+                        }
+
                         const res = await fetch(`api/notes/${currentNote.value.id}`, {
                             method: 'PUT',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({
-                                name: currentNote.value.name,
+                                name: newName,
                                 content: editContent.value,
                                 icon: currentNote.value.icon
                             })
@@ -1630,24 +2075,41 @@
                         if (res.ok) {
                             currentNote.value = await res.json();
                             isEditing.value = false;
+                            showPreview.value = false;
                             await loadNotes(currentCategory.value.id);
+                            updateURL();
+                            updatePageTitle();
                         }
                     } catch (e) {console.error(e);}
                 };
 
                 const cancelEdit = () => {
                     isEditing.value = false;
+                    showPreview.value = false;
                     editContent.value = '';
+                    editTitle.value = '';
                 };
 
-                const confirmDelete = () => {showDeleteConfirm.value = true;};
+                const noteToDelete = ref(null);
+
+                const confirmDelete = () => {
+                    noteToDelete.value = currentNote.value;
+                    showDeleteConfirm.value = true;
+                };
 
                 const deleteNote = async () => {
-                    if (!currentNote.value) return;
+                    const note = noteToDelete.value;
+                    if (!note) return;
                     try {
-                        await fetch(`api/notes/${currentNote.value.id}`, {method: 'DELETE'});
-                        currentNote.value = null;
+                        await fetch(`api/notes/${note.id}`, {method: 'DELETE'});
+                        cache.delete(`api/notes/${note.id}`);
+                        if (currentNote.value?.id === note.id) {
+                            currentNote.value = null;
+                            updatePageTitle();
+                            updateURL();
+                        }
                         showDeleteConfirm.value = false;
+                        noteToDelete.value = null;
                         await loadNotes(currentCategory.value.id);
                     } catch (e) {console.error(e);}
                 };
@@ -1665,16 +2127,169 @@
                     contextMenu.note = null;
                 };
 
-                const deleteContextNote = async () => {
+                const deleteContextNote = () => {
                     if (!contextMenu.note) return;
+                    noteToDelete.value = contextMenu.note;
+                    showDeleteConfirm.value = true;
+                    closeContextMenu();
+                };
+
+                const cloneNote = async () => {
+                    if (!contextMenu.note) return;
+                    const note = contextMenu.note;
+                    closeContextMenu();
+
                     try {
-                        await fetch(`api/notes/${contextMenu.note.id}`, {method: 'DELETE'});
-                        if (currentNote.value?.id === contextMenu.note.id) {
-                            currentNote.value = null;
+                        // Fetch full note content
+                        const res = await fetch(`api/notes/${note.id}`);
+                        const fullNote = await res.json();
+
+                        // Create clone with _clone suffix
+                        const baseName = displayNoteName(fullNote.name);
+                        const langMatch = (fullNote.name || '').match(/__([a-z]{2})(?:\.md)?$/i);
+                        let newName = `${baseName}_clone`;
+                        if (langMatch) {
+                            newName = `${newName}__${langMatch[1]}`;
                         }
+
+                        await fetch('api/notes', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                category_id: currentCategory.value.id,
+                                name: newName,
+                                content: fullNote.content,
+                                icon: fullNote.icon
+                            })
+                        });
                         await loadNotes(currentCategory.value.id);
                     } catch (e) {console.error(e);}
-                    closeContextMenu();
+                };
+
+                // Formatting functions
+                const insertFormat = (format) => {
+                    if (!monacoEditor.value) return;
+                    const editor = monacoEditor.value;
+                    const selection = editor.getSelection();
+                    const selectedText = editor.getModel().getValueInRange(selection);
+
+                    let text = '';
+                    switch (format) {
+                        case 'bold':
+                            text = `**${selectedText || 'bold text'}**`;
+                            break;
+                        case 'italic':
+                            text = `*${selectedText || 'italic text'}*`;
+                            break;
+                        case 'underline':
+                            text = `<u>${selectedText || 'underlined text'}</u>`;
+                            break;
+                        case 'subscript':
+                            text = `<sub>${selectedText || 'subscript'}</sub>`;
+                            break;
+                        case 'superscript':
+                            text = `<sup>${selectedText || 'superscript'}</sup>`;
+                            break;
+                        case 'image':
+                            text = `![${selectedText || 'alt text'}](url)`;
+                            break;
+                    }
+
+                    const op = {
+                        identifier: {major: 1, minor: 1},
+                        range: selection,
+                        text: text,
+                        forceMoveMarkers: true
+                    };
+                    editor.executeEdits('format-insert', [op]);
+                    editContent.value = editor.getValue();
+                };
+
+                // Link insert
+                const onLinkInput = () => {
+                    const query = linkForm.url.toLowerCase();
+                    if (query.startsWith('[[') || (!query.startsWith('http') && query.length > 1)) {
+                        const searchTerm = query.replace(/^\[\[/, '');
+                        linkSuggestions.value = notes.value
+                            .filter(n => displayNoteName(n.name).toLowerCase().includes(searchTerm))
+                            .slice(0, 5);
+                    } else {
+                        linkSuggestions.value = [];
+                    }
+                };
+
+                const selectLinkSuggestion = (note) => {
+                    linkForm.url = `[[${displayNoteName(note.name)}]]`;
+                    linkForm.text = linkForm.text || displayNoteName(note.name);
+                    linkSuggestions.value = [];
+                };
+
+                const insertLink = () => {
+                    if (!monacoEditor.value || !linkForm.url) return;
+                    const editor = monacoEditor.value;
+                    const selection = editor.getSelection();
+
+                    let text = '';
+                    if (linkForm.url.startsWith('[[')) {
+                        text = linkForm.url;
+                    } else {
+                        text = `[${linkForm.text || linkForm.url}](${linkForm.url})`;
+                    }
+
+                    const op = {
+                        identifier: {major: 1, minor: 1},
+                        range: selection,
+                        text: text,
+                        forceMoveMarkers: true
+                    };
+                    editor.executeEdits('link-insert', [op]);
+                    editContent.value = editor.getValue();
+                    showLinkModal.value = false;
+                    linkForm.text = '';
+                    linkForm.url = '';
+                    linkSuggestions.value = [];
+                };
+
+                // Find & Replace
+                const findNext = () => {
+                    if (!monacoEditor.value || !findReplaceForm.find) return;
+                    const editor = monacoEditor.value;
+                    const model = editor.getModel();
+
+                    let searchString = findReplaceForm.find;
+                    editor.getAction('actions.find').run();
+                    editor.trigger('find', 'editor.actions.findWithArgs', {
+                        searchString: searchString,
+                        isRegex: findReplaceForm.regex,
+                        matchCase: findReplaceForm.caseSensitive
+                    });
+                };
+
+                const replaceOne = () => {
+                    if (!monacoEditor.value || !findReplaceForm.find) return;
+                    const content = editContent.value;
+                    let flags = findReplaceForm.caseSensitive ? '' : 'i';
+
+                    try {
+                        const regex = findReplaceForm.regex
+                            ? new RegExp(findReplaceForm.find, flags)
+                            : new RegExp(findReplaceForm.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+                        editContent.value = content.replace(regex, findReplaceForm.replace);
+                    } catch (e) {console.error('Invalid regex:', e);}
+                };
+
+                const replaceAll = () => {
+                    if (!monacoEditor.value || !findReplaceForm.find) return;
+                    const content = editContent.value;
+                    let flags = 'g' + (findReplaceForm.caseSensitive ? '' : 'i');
+
+                    try {
+                        const regex = findReplaceForm.regex
+                            ? new RegExp(findReplaceForm.find, flags)
+                            : new RegExp(findReplaceForm.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+                        editContent.value = content.replace(regex, findReplaceForm.replace);
+                        showFindReplace.value = false;
+                    } catch (e) {console.error('Invalid regex:', e);}
                 };
 
                 const translateNote = async () => {
@@ -1929,6 +2544,9 @@
                     await checkAuth();
                     await loadCategories();
 
+                    // Parse URL and navigate to note if present
+                    await parseURLAndNavigate();
+
                     // Hide splash screen
                     setTimeout(() => {
                         const splash = document.getElementById('splash');
@@ -1940,6 +2558,27 @@
 
                     // Close context menu on click outside
                     document.addEventListener('click', () => closeContextMenu());
+
+                    // Handle browser back/forward
+                    window.addEventListener('popstate', async (e) => {
+                        if (e.state?.noteId) {
+                            const res = await fetch(`api/notes/${e.state.noteId}`);
+                            if (res.ok) {
+                                const note = await res.json();
+                                const cat = categories.value.find(c => c.id === note.category_id);
+                                if (cat && cat.id !== currentCategory.value?.id) {
+                                    currentCategory.value = cat;
+                                    await loadNotes(cat.id);
+                                }
+                                currentNote.value = note;
+                                isEditing.value = false;
+                                updatePageTitle();
+                            }
+                        } else {
+                            currentNote.value = null;
+                            updatePageTitle();
+                        }
+                    });
 
                     // Note links
                     document.addEventListener('click', (e) => {
@@ -1963,13 +2602,17 @@
                 });
 
                 return {
-                    isPanelCollapsed, editContent, editorOptions, handleBeforeMount, categories, notes, filteredNotes, currentCategory, currentNote,
+                    isPanelCollapsed, editContent, editTitle, editorOptions, handleBeforeMount, handleEditorMount,
+                    categories, notes, filteredNotes, currentCategory, currentNote, notesLoading, noteToDelete,
                     isEditing, isAuthenticated, showSettings, showCreateModal, showDeleteConfirm, computedTheme,
-                    showLLMPopup, llmPrompt, llmLoading, settings, llmSettings, createForm,
-                    availableIcons, contextMenu, t, isDevicon, logoFilter, renderedMarkdown,
+                    showLLMPopup, showPreview, showLinkModal, showFindReplace, llmPrompt, llmLoading,
+                    settings, llmSettings, createForm, linkForm, findReplaceForm, linkSuggestions,
+                    availableIcons, contextMenu, t, isDevicon, logoFilter, renderedMarkdown, previewMarkdown,
                     stripMd, displayNoteName, formatDate, togglePanel, selectCategory, goBack,
-                    selectNote, toggleEditMode, saveNote, cancelEdit, confirmDelete, deleteNote,
-                    openContextMenu, closeContextMenu, deleteContextNote, translateNote,
+                    selectNote, toggleEditMode, togglePreview, saveNote, cancelEdit, confirmDelete, deleteNote,
+                    openContextMenu, closeContextMenu, deleteContextNote, cloneNote, translateNote,
+                    insertFormat, onLinkInput, selectLinkSuggestion, insertLink,
+                    findNext, replaceOne, replaceAll,
                     openSettings, closeSettings, openCreateModal, closeCreateModal,
                     updateCustomIcon, create, applyHue, saveSettings, saveAllSettings,
                     getDefaultModel, closeLLMPopup, askLLM, openLLMChat
