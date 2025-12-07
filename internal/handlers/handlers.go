@@ -11,19 +11,22 @@ import (
 	"lava-notes/internal/cache"
 	"lava-notes/internal/db"
 	"lava-notes/internal/models"
+	"lava-notes/internal/views"
 )
 
 type Handlers struct {
 	db    *db.DB
 	cache *cache.Cache
 	auth  *auth.Auth
+	views *views.Views
 }
 
-func New(database *db.DB, c *cache.Cache, a *auth.Auth) *Handlers {
+func New(database *db.DB, c *cache.Cache, a *auth.Auth, v *views.Views) *Handlers {
 	return &Handlers{
 		db:    database,
 		cache: c,
 		auth:  a,
+		views: v,
 	}
 }
 
@@ -37,6 +40,20 @@ func (h *Handlers) respond(w http.ResponseWriter, data interface{}, status int) 
 
 func (h *Handlers) error(w http.ResponseWriter, message string, status int) {
 	h.respond(w, map[string]string{"error": message}, status)
+}
+
+type NoteWithViews struct {
+	*models.Note
+	Views int64 `json:"views,omitempty"`
+}
+
+func (h *Handlers) respondWithViews(w http.ResponseWriter, note *models.Note, status int, r *http.Request) {
+	response := NoteWithViews{Note: note}
+	// Only show views to authenticated users
+	if auth.IsWriter(r) {
+		response.Views = h.views.GetViews(note.ID)
+	}
+	h.respond(w, response, status)
 }
 
 // Categories
@@ -174,6 +191,18 @@ func (h *Handlers) GetNotes(w http.ResponseWriter, r *http.Request) {
 	if notes == nil {
 		notes = []models.NoteListItem{}
 	}
+
+	// Filter out locked notes for unauthorized users
+	if !auth.IsWriter(r) {
+		filtered := make([]models.NoteListItem, 0, len(notes))
+		for _, note := range notes {
+			if note.Icon != "lock" {
+				filtered = append(filtered, note)
+			}
+		}
+		notes = filtered
+	}
+
 	h.respond(w, notes, http.StatusOK)
 }
 
@@ -187,7 +216,16 @@ func (h *Handlers) GetNote(w http.ResponseWriter, r *http.Request) {
 
 	cacheKey := fmt.Sprintf("note:%d", id)
 	if note, ok := h.cache.Get(cacheKey); ok {
-		h.respond(w, note, http.StatusOK)
+		// Block locked notes for unauthorized users
+		if note.Icon == "lock" && !auth.IsWriter(r) {
+			h.error(w, "Note not found", http.StatusNotFound)
+			return
+		}
+		// Record view
+		if ipHeader := h.views.GetIPHeaderName(); ipHeader != "" {
+			h.views.RecordView(id, r.Header.Get(ipHeader))
+		}
+		h.respondWithViews(w, note, http.StatusOK, r)
 		return
 	}
 
@@ -197,8 +235,18 @@ func (h *Handlers) GetNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Block locked notes for unauthorized users
+	if note.Icon == "lock" && !auth.IsWriter(r) {
+		h.error(w, "Note not found", http.StatusNotFound)
+		return
+	}
+
 	h.cache.Set(cacheKey, note)
-	h.respond(w, note, http.StatusOK)
+	// Record view
+	if ipHeader := h.views.GetIPHeaderName(); ipHeader != "" {
+		h.views.RecordView(id, r.Header.Get(ipHeader))
+	}
+	h.respondWithViews(w, note, http.StatusOK, r)
 }
 
 func (h *Handlers) GetNoteByPath(w http.ResponseWriter, r *http.Request) {
@@ -222,7 +270,17 @@ func (h *Handlers) GetNoteByPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.respond(w, note, http.StatusOK)
+	// Block locked notes for unauthorized users
+	if note.Icon == "lock" && !auth.IsWriter(r) {
+		h.error(w, "Note not found", http.StatusNotFound)
+		return
+	}
+
+	// Record view
+	if ipHeader := h.views.GetIPHeaderName(); ipHeader != "" {
+		h.views.RecordView(note.ID, r.Header.Get(ipHeader))
+	}
+	h.respondWithViews(w, note, http.StatusOK, r)
 }
 
 func (h *Handlers) CreateNote(w http.ResponseWriter, r *http.Request) {

@@ -65,6 +65,10 @@ func (d *DB) migrate() error {
 			hue_shift INTEGER DEFAULT 0
 		)`,
 		`INSERT OR IGNORE INTO settings (id) VALUES (1)`,
+		`CREATE TABLE IF NOT EXISTS views (
+			note_id INTEGER PRIMARY KEY,
+			count INTEGER DEFAULT 0
+		)`,
 	}
 
 	for _, q := range queries {
@@ -242,4 +246,45 @@ func (d *DB) GetSettings() (*models.Settings, error) {
 func (d *DB) UpdateSettings(theme, language string, hueShift int) error {
 	_, err := d.conn.Exec(`UPDATE settings SET theme = ?, language = ?, hue_shift = ? WHERE id = 1`, theme, language, hueShift)
 	return err
+}
+
+// Views
+func (d *DB) GetAllViews() (map[int64]int64, error) {
+	rows, err := d.conn.Query(`SELECT note_id, count FROM views`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	views := make(map[int64]int64)
+	for rows.Next() {
+		var noteID, count int64
+		if err := rows.Scan(&noteID, &count); err != nil {
+			return nil, err
+		}
+		views[noteID] = count
+	}
+	return views, nil
+}
+
+func (d *DB) SaveViews(views map[int64]int64) error {
+	tx, err := d.conn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT OR REPLACE INTO views (note_id, count) VALUES (?, ?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for noteID, count := range views {
+		if _, err := stmt.Exec(noteID, count); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

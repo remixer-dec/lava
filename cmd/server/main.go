@@ -8,12 +8,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"lava-notes/internal/auth"
 	"lava-notes/internal/cache"
 	"lava-notes/internal/db"
 	"lava-notes/internal/handlers"
+	"lava-notes/internal/views"
 )
 
 func main() {
@@ -45,7 +48,17 @@ func main() {
 
 	c := cache.New()
 	a := auth.New(database, jwtSecret)
-	h := handlers.New(database, c, a)
+	v := views.New(database)
+	h := handlers.New(database, c, a, v)
+
+	// Graceful shutdown for views persistence
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
+		v.Shutdown()
+		os.Exit(0)
+	}()
 
 	if *generateLink {
 		baseURL := os.Getenv("BASE_URL")
