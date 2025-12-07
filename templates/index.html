@@ -108,6 +108,62 @@
             transform: rotateX(90.01deg);
             pointer-events: none;
         }
+
+        .chat-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            width: 360px;
+            max-width: 100vw;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        .chat-panel.open { transform: translateX(0); }
+        .chat-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-tertiary);
+        }
+        .chat-panel-header img { width: 32px; height: 32px; border-radius: 6px; }
+        .chat-panel-header h3 { flex: 1; margin: 0; font-size: 16px; }
+        .chat-panel-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .chat-msg { padding: 10px 12px; border-radius: 8px; max-width: 90%; word-break: break-word; white-space: pre-wrap; font-size: 14px; }
+        .chat-msg.user { background: var(--accent-muted); color: #fff; align-self: flex-end; }
+        .chat-msg.assistant { background: var(--bg-tertiary); align-self: flex-start; }
+        .chat-input-area { display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg-tertiary); }
+        .chat-input-area textarea { resize: none; min-height: 60px; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; }
+        .chat-toggles { display: flex; gap: 16px; font-size: 13px; }
+        .chat-toggles label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-secondary); }
+        .chat-toggles input { accent-color: var(--accent); }
+        .chat-send-row { display: flex; gap: 8px; }
+        .chat-send-row .btn { flex: 1; }
+
+        .private-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--accent-muted);
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        .translate-modal-langs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .translate-modal-langs label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .translate-modal-langs input[type="radio"] { accent-color: var(--accent); }
+        .translate-lang-input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); }
     </style>
 </head>
 
@@ -210,16 +266,22 @@
                                     :placeholder="t('enterName')">
                                 <span v-if="getNoteLangCode(currentNote.name)" class="lang-code-badge">{{
                                     getNoteLangCode(currentNote.name) }}</span>
+                                <span v-if="currentNote.icon === 'lock'" class="private-badge">
+                                    <i class="icon light-icon-lock" style="font-size:10px"></i> {{ t('private') }}
+                                </span>
                             </div>
                             <div v-else class="note-title-row">
                                 <h1 class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
                                 <span v-if="isAuthenticated && getNoteLangCode(currentNote.name)"
                                     class="lang-code-badge">{{ getNoteLangCode(currentNote.name) }}</span>
+                                <span v-if="currentNote.icon === 'lock'" class="private-badge">
+                                    <i class="icon light-icon-lock" style="font-size:10px"></i> {{ t('private') }}
+                                </span>
                             </div>
                         </div>
                         <div class="note-actions" v-if="isAuthenticated">
-                            <button class="icon-btn" @click="openLLMChat" :title="t('askLLM')">
-                                <i class="icon light-icon-message-circle"></i>
+                            <button v-if="isEditing" class="icon-btn" @click="toggleChatPanel" :title="t('askLLM')">
+                                <img src="https://wiki.hypixel.net/images/a/ae/SkyBlock_entities_fried_chicken.gif" style="width:20px;height:20px;border-radius:4px">
                             </button>
                             <button v-if="isEditing" class="icon-btn" @click="togglePreview"
                                 :title="showPreview ? t('hidePreview') : t('showPreview')">
@@ -381,6 +443,12 @@
                         <label>{{ t('model') }}</label>
                         <input type="text" v-model="llmSettings.model" :placeholder="getDefaultModel()">
                     </div>
+
+                    <hr>
+                    <h3>{{ t('encryptionKey') }}</h3>
+                    <div class="form-group">
+                        <input type="password" v-model="settings.encryptionKey" :placeholder="t('encryptionKeyPlaceholder')">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-primary" @click="saveAllSettings">{{ t('save') }}</button>
@@ -427,32 +495,54 @@
             </div>
         </div>
 
-        <!-- LLM Popup -->
-        <div class="modal-overlay" v-if="showLLMPopup" @click.self="closeLLMPopup">
-            <div class="modal llm-modal">
+        <!-- Chat Panel (Chicken) -->
+        <div class="chat-panel" :class="{ open: showChatPanel }">
+            <div class="chat-panel-header">
+                <img src="https://wiki.hypixel.net/images/a/ae/SkyBlock_entities_fried_chicken.gif" alt="Chicken">
+                <h3>{{ t('chicken') }}</h3>
+                <button class="icon-btn" @click="showChatPanel = false">
+                    <i class="icon light-icon-x"></i>
+                </button>
+            </div>
+            <div class="chat-panel-body">
+                <div class="chat-messages">
+                    <div v-for="(msg, i) in chatMessages" :key="i" class="chat-msg" :class="msg.role">{{ msg.content }}</div>
+                    <div v-if="llmLoading" class="chat-msg assistant">{{ t('thinking') }}</div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="chat-toggles">
+                    <label><input type="checkbox" v-model="chatIncludeDoc"> {{ t('includeDocument') }}</label>
+                    <label><input type="checkbox" v-model="chatUseTools"> {{ t('useTools') }}</label>
+                </div>
+                <textarea v-model="llmPrompt" :placeholder="t('enterPrompt')" @keydown.enter.ctrl="sendChat"></textarea>
+                <div class="chat-send-row">
+                    <button class="btn btn-primary" @click="sendChat" :disabled="!llmPrompt.trim() || llmLoading">{{ t('send') }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Translate Modal -->
+        <div class="modal-overlay" v-if="showTranslateModal" @click.self="showTranslateModal = false">
+            <div class="modal modal-small">
                 <div class="modal-header">
-                    <h2>{{ t('askLLM') }}</h2>
-                    <button class="icon-btn" @click="closeLLMPopup">
-                        <i :class="'icon light-icon-' + icon"></i>
+                    <h2>{{ t('translate') }}</h2>
+                    <button class="icon-btn" @click="showTranslateModal = false">
+                        <i class="icon light-icon-x"></i>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div v-if="!llmLoading">
-                        <div class="form-group">
-                            <label>{{ t('prompt') }}</label>
-                            <textarea v-model="llmPrompt" rows="3" :placeholder="t('enterPrompt')"></textarea>
-                        </div>
-                        <div class="llm-options">
-                            <button class="btn" @click="askLLM(false)" :disabled="!llmPrompt.trim()">{{
-                                t('askPromptOnly') }}</button>
-                            <button class="btn btn-primary" @click="askLLM(true)" :disabled="!llmPrompt.trim()">{{
-                                t('askWithDocument') }}</button>
-                        </div>
+                    <label style="margin-bottom:8px;display:block">{{ t('targetLanguage') }}</label>
+                    <div class="translate-modal-langs">
+                        <label><input type="radio" v-model="translateLangMode" value="en"> English</label>
+                        <label><input type="radio" v-model="translateLangMode" value="ru"> Русский</label>
+                        <label><input type="radio" v-model="translateLangMode" value="custom"> Other:</label>
                     </div>
-                    <div v-else class="llm-loading">
-                        <div class="spinner"></div>
-                        <span>{{ t('thinking') }}</span>
-                    </div>
+                    <input v-if="translateLangMode === 'custom'" type="text" v-model="translateCustomLang" class="translate-lang-input" placeholder="e.g. Spanish, German, Japanese...">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" @click="showTranslateModal = false">{{ t('cancel') }}</button>
+                    <button class="btn btn-primary" @click="doTranslate" :disabled="llmLoading">{{ t('translate') }}</button>
                 </div>
             </div>
         </div>
@@ -605,15 +695,22 @@
                 const showSettings = ref(false);
                 const showCreateModal = ref(false);
                 const showDeleteConfirm = ref(false);
-                const showLLMPopup = ref(false);
+                const showChatPanel = ref(false);
                 const showPreview = ref(false);
                 const showLinkModal = ref(false);
                 const showFindReplace = ref(false);
+                const showTranslateModal = ref(false);
                 const llmPrompt = ref('');
                 const llmLoading = ref(false);
                 const linkSuggestions = ref([]);
                 const notesLoading = ref(false);
-                const forceUpdate = ref(0)
+                const forceUpdate = ref(0);
+                const chatMessages = ref([]);
+                const chatIncludeDoc = ref(true);
+                const chatUseTools = ref(false);
+                const translateLangMode = ref('en');
+                const translateCustomLang = ref('');
+                const translateNoteRef = ref(null);
                 let translations = reactive({en: {}, ru: {}})
 
                 const contextMenu = reactive({
@@ -637,7 +734,8 @@
                 const settings = reactive({
                     theme: 'dark',
                     language: 'en',
-                    hue_shift: 0
+                    hue_shift: 0,
+                    encryptionKey: ''
                 });
 
                 const llmSettings = reactive({
@@ -814,9 +912,16 @@
                             await loadNotes(currentCategory.value.id);
                             return;
                         }
-                        currentNote.value = await res.json();
+                        const noteData = await res.json();
+                        if (noteData.icon === 'lock' && settings.encryptionKey) {
+                            noteData.name = await decryptText(noteData.name, settings.encryptionKey);
+                            noteData.content = await decryptText(noteData.content || '', settings.encryptionKey);
+                        }
+                        currentNote.value = noteData;
                         isEditing.value = false;
                         showPreview.value = false;
+                        showChatPanel.value = false;
+                        chatMessages.value = [];
                         updateURL();
                         updatePageTitle();
                     } catch (e) {console.error(e);}
@@ -834,6 +939,7 @@
                         startAutoSave();
                     } else {
                         stopAutoSave();
+                        showChatPanel.value = false;
                         draftRecovery.show = false;
                     }
                 };
@@ -1030,36 +1136,127 @@
                 };
 
 
-                const openLLMChat = () => {
-                    llmPrompt.value = '';
-                    showLLMPopup.value = true;
+                const toggleChatPanel = () => {
+                    showChatPanel.value = !showChatPanel.value;
+                    if (showChatPanel.value && chatMessages.value.length === 0) {
+                        llmPrompt.value = '';
+                    }
                 };
+
+                // XTEA-CTR + AES-GCM encryption
+                const ENC_PREFIX = 'LAVA_ENC:';
+                const xtea = {
+                    encrypt(v, k) {
+                        let v0 = v[0], v1 = v[1], sum = 0, delta = 0x9E3779B9;
+                        for (let i = 0; i < 32; i++) { v0 += (((v1 << 4) ^ (v1 >>> 5)) + v1) ^ (sum + k[sum & 3]); v0 >>>= 0; sum = (sum + delta) >>> 0; v1 += (((v0 << 4) ^ (v0 >>> 5)) + v0) ^ (sum + k[(sum >>> 11) & 3]); v1 >>>= 0; }
+                        return [v0, v1];
+                    },
+                    ctr(data, key) {
+                        const k = new Uint32Array(4);
+                        for (let i = 0; i < 16; i++) k[i >> 2] |= key[i % key.length] << ((i & 3) << 3);
+                        const result = new Uint8Array(data.length);
+                        let ctr = [0, 0];
+                        for (let i = 0; i < data.length; i += 8) {
+                            const ks = this.encrypt(ctr, k);
+                            for (let j = 0; j < 8 && i + j < data.length; j++) result[i + j] = data[i + j] ^ ((ks[j >> 2] >>> ((j & 3) << 3)) & 0xff);
+                            ctr[0]++; if (ctr[0] === 0) ctr[1]++;
+                        }
+                        return result;
+                    }
+                };
+
+                async function deriveKey(pass) {
+                    const enc = new TextEncoder().encode(pass);
+                    const hash = await crypto.subtle.digest('SHA-256', enc);
+                    return crypto.subtle.importKey('raw', hash, 'AES-GCM', false, ['encrypt', 'decrypt']);
+                }
+
+                async function encryptText(text, pass) {
+                    const enc = new TextEncoder();
+                    const data = enc.encode(text);
+                    const xteaOut = xtea.ctr(data, enc.encode(pass));
+                    const key = await deriveKey(pass);
+                    const iv = crypto.getRandomValues(new Uint8Array(12));
+                    const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv}, key, xteaOut);
+                    const buf = new Uint8Array(iv.length + ct.byteLength);
+                    buf.set(iv); buf.set(new Uint8Array(ct), iv.length);
+                    return ENC_PREFIX + btoa(String.fromCharCode(...buf));
+                }
+
+                async function decryptText(str, pass) {
+                    if (!str.startsWith(ENC_PREFIX)) return str;
+                    try {
+                        const enc = new TextEncoder();
+                        const raw = Uint8Array.from(atob(str.slice(ENC_PREFIX.length)), c => c.charCodeAt(0));
+                        const iv = raw.slice(0, 12), ct = raw.slice(12);
+                        const key = await deriveKey(pass);
+                        const dec = await crypto.subtle.decrypt({name: 'AES-GCM', iv}, key, ct);
+                        const xteaOut = xtea.ctr(new Uint8Array(dec), enc.encode(pass));
+                        return new TextDecoder().decode(xteaOut);
+                    } catch { return str; }
+                }
+
+                // Unified LLM call
+                async function callLLM(messages, systemPrompt) {
+                    const model = llmSettings.model || getDefaultModel();
+                    const provider = llmSettings.provider;
+                    if (!provider) return '';
+                    const headers = {'Content-Type': 'application/json'};
+                    if (llmSettings.apiKey) {
+                        if (provider === 'openai') headers['Authorization'] = `Bearer ${llmSettings.apiKey}`;
+                        else if (provider === 'claude') { headers['x-api-key'] = llmSettings.apiKey; headers['anthropic-version'] = '2023-06-01'; headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
+                    }
+                    let body, url;
+                    if (provider === 'openai') {
+                        url = (llmSettings.endpoint || 'https://api.openai.com/v1') + '/chat/completions';
+                        const msgs = systemPrompt ? [{role: 'system', content: systemPrompt}, ...messages] : messages;
+                        body = JSON.stringify({model, messages: msgs});
+                    } else if (provider === 'gemini') {
+                        url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmSettings.apiKey}`;
+                        const parts = messages.map(m => ({text: (m.role === 'system' ? '[System] ' : '') + m.content}));
+                        if (systemPrompt) parts.unshift({text: '[System] ' + systemPrompt});
+                        body = JSON.stringify({contents: [{parts}]});
+                    } else if (provider === 'claude') {
+                        url = 'https://api.anthropic.com/v1/messages';
+                        body = JSON.stringify({model, max_tokens: 4096, system: systemPrompt || undefined, messages});
+                    }
+                    const res = await fetch(url, {method: 'POST', headers, body});
+                    const data = await res.json();
+                    if (provider === 'openai') return data.choices?.[0]?.message?.content || '';
+                    if (provider === 'gemini') return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    if (provider === 'claude') return data.content?.[0]?.text || '';
+                    return '';
+                }
 
                 const saveNote = async () => {
                     if (!currentNote.value) return;
                     cache.delete(api(`notes/${currentNote.value.id}`));
                     try {
-                        // Reconstruct the full name with language suffix if present
                         const oldName = currentNote.value.name || '';
                         const langMatch = oldName.match(/__([a-z]{2})(?:\.md)?$/i);
                         let newName = editTitle.value.trim();
-                        if (langMatch) {
-                            newName = `${newName}__${langMatch[1]}`;
+                        if (langMatch) newName = `${newName}__${langMatch[1]}`;
+                        let content = editContent.value;
+                        const isPrivate = currentNote.value.icon === 'lock';
+                        if (isPrivate && settings.encryptionKey) {
+                            newName = await encryptText(newName, settings.encryptionKey);
+                            content = await encryptText(content, settings.encryptionKey);
                         }
-
                         const res = await fetch(api(`notes/${currentNote.value.id}`), {
                             method: 'PUT',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({
-                                name: newName,
-                                content: editContent.value,
-                                icon: currentNote.value.icon
-                            })
+                            body: JSON.stringify({name: newName, content, icon: currentNote.value.icon})
                         });
                         if (res.ok) {
-                            currentNote.value = await res.json();
+                            const saved = await res.json();
+                            if (isPrivate && settings.encryptionKey) {
+                                saved.name = await decryptText(saved.name, settings.encryptionKey);
+                                saved.content = await decryptText(saved.content || '', settings.encryptionKey);
+                            }
+                            currentNote.value = saved;
                             isEditing.value = false;
                             showPreview.value = false;
+                            showChatPanel.value = false;
                             stopAutoSave();
                             localStorage.removeItem('lava-draft');
                             draftRecovery.show = false;
@@ -1073,6 +1270,7 @@
                 const cancelEdit = () => {
                     isEditing.value = false;
                     showPreview.value = false;
+                    showChatPanel.value = false;
                     editContent.value = '';
                     editTitle.value = '';
                     stopAutoSave();
@@ -1320,87 +1518,44 @@
                     } catch (e) {console.error('Invalid regex:', e);}
                 };
 
-                const translateNote = async () => {
-                    if (!contextMenu.note || !llmSettings.provider || !llmSettings.apiKey) {
-                        closeContextMenu();
-                        return;
-                    }
-
-                    const note = contextMenu.note;
+                const translateNote = () => {
+                    if (!contextMenu.note) { closeContextMenu(); return; }
+                    translateNoteRef.value = contextMenu.note;
+                    translateLangMode.value = settings.language === 'en' ? 'ru' : 'en';
+                    translateCustomLang.value = '';
                     closeContextMenu();
+                    showTranslateModal.value = true;
+                };
 
-                    // Fetch full note content
+                const doTranslate = async () => {
+                    if (!translateNoteRef.value || !llmSettings.provider) return;
+                    const note = translateNoteRef.value;
                     const res = await fetch(api(`notes/${note.id}`));
                     const fullNote = await res.json();
-
-                    // Determine target language
-                    const targetLang = settings.language === 'en' ? 'Russian' : 'English';
-                    const targetCode = settings.language === 'en' ? 'ru' : 'en';
-
-                    const prompt = `Translate the following markdown document to ${targetLang}. Keep all markdown formatting intact. Only output the translated content, nothing else.\n\n${fullNote.content}`;
-
+                    let targetLang, targetCode;
+                    if (translateLangMode.value === 'custom') {
+                        targetLang = translateCustomLang.value || 'English';
+                        targetCode = targetLang.slice(0, 2).toLowerCase();
+                    } else {
+                        targetLang = translateLangMode.value === 'en' ? 'English' : 'Russian';
+                        targetCode = translateLangMode.value;
+                    }
+                    const prompt = `Translate to ${targetLang}. Keep markdown formatting. Only output translated content:\n\n${fullNote.content}`;
                     llmLoading.value = true;
-                    showLLMPopup.value = true;
-                    llmPrompt.value = t('translating');
-
+                    showTranslateModal.value = false;
                     try {
-                        let response = '';
-                        const model = llmSettings.model || getDefaultModel();
-
-                        if (llmSettings.provider === 'openai') {
-                            const endpoint = llmSettings.endpoint || 'https://api.openai.com/v1';
-                            const r = await fetch(`${endpoint}/chat/completions`, {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${llmSettings.apiKey}`},
-                                body: JSON.stringify({model, messages: [{role: 'user', content: prompt}]})
-                            });
-                            const data = await r.json();
-                            response = data.choices?.[0]?.message?.content || '';
-                        } else if (llmSettings.provider === 'gemini') {
-                            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmSettings.apiKey}`, {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({contents: [{parts: [{text: prompt}]}]})
-                            });
-                            const data = await r.json();
-                            response = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                        } else if (llmSettings.provider === 'claude') {
-                            const r = await fetch('https://api.anthropic.com/v1/messages', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'x-api-key': llmSettings.apiKey,
-                                    'anthropic-version': '2023-06-01',
-                                    'anthropic-dangerous-direct-browser-access': 'true'
-                                },
-                                body: JSON.stringify({model, max_tokens: 4096, messages: [{role: 'user', content: prompt}]})
-                            });
-                            const data = await r.json();
-                            response = data.content?.[0]?.text || '';
-                        }
-
+                        const response = await callLLM([{role: 'user', content: prompt}]);
                         if (response) {
-                            // Create translated note
                             const baseName = displayNoteName(fullNote.name);
-                            const newName = `${baseName}__${targetCode}`;
                             await fetch(api('notes'), {
                                 method: 'POST',
                                 headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({
-                                    category_id: currentCategory.value.id,
-                                    name: newName,
-                                    content: response,
-                                    icon: fullNote.icon
-                                })
+                                body: JSON.stringify({category_id: currentCategory.value.id, name: `${baseName}__${targetCode}`, content: response, icon: fullNote.icon})
                             });
                             await loadNotes(currentCategory.value.id);
                         }
-                    } catch (e) {
-                        console.error('Translation error:', e);
-                    }
-
+                    } catch (e) { console.error('Translation error:', e); }
                     llmLoading.value = false;
-                    showLLMPopup.value = false;
                 };
 
                 const openSettings = () => {showSettings.value = true;};
@@ -1492,65 +1647,60 @@
                     return defaults[llmSettings.provider] || '';
                 };
 
-                const closeLLMPopup = () => {showLLMPopup.value = false; llmPrompt.value = '';};
-
-                const askLLM = async (includeDoc) => {
-                    if (!llmSettings.provider || !llmSettings.apiKey) return;
-                    llmLoading.value = true;
-
-                    try {
-                        let response = '';
-                        const model = llmSettings.model || getDefaultModel();
-                        const prompt = includeDoc
-                            ? `Document:\n${editContent.value}\n\nQuestion: ${llmPrompt.value}`
-                            : llmPrompt.value;
-
-                        if (llmSettings.provider === 'openai') {
-                            const endpoint = llmSettings.endpoint || 'https://api.openai.com/v1';
-                            const res = await fetch(`${endpoint}/chat/completions`, {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${llmSettings.apiKey}`},
-                                body: JSON.stringify({model, messages: [{role: 'user', content: prompt}]})
-                            });
-                            const data = await res.json();
-                            response = data.choices?.[0]?.message?.content || '';
-                        } else if (llmSettings.provider === 'gemini') {
-                            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmSettings.apiKey}`, {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({contents: [{parts: [{text: prompt}]}]})
-                            });
-                            const data = await res.json();
-                            response = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                        } else if (llmSettings.provider === 'claude') {
-                            const res = await fetch('https://api.anthropic.com/v1/messages', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'x-api-key': llmSettings.apiKey,
-                                    'anthropic-version': '2023-06-01',
-                                    'anthropic-dangerous-direct-browser-access': 'true'
-                                },
-                                body: JSON.stringify({model, max_tokens: 4096, messages: [{role: 'user', content: prompt}]})
-                            });
-                            const data = await res.json();
-                            response = data.content?.[0]?.text || '';
+                // Tool implementations
+                const applyTools = (response) => {
+                    const lines = editContent.value.split('\n');
+                    const toolRegex = /\[TOOL:(\w+)\((.*?)\)\]/g;
+                    let match, applied = false;
+                    while ((match = toolRegex.exec(response)) !== null) {
+                        const [, tool, argsStr] = match;
+                        const args = argsStr.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+                        if (tool === 'find_and_replace_with_regexp' && args.length >= 2) {
+                            try { editContent.value = editContent.value.replace(new RegExp(args[0], 'g'), args[1]); applied = true; } catch {}
+                        } else if (tool === 'append_to_the_end' && args[0]) {
+                            editContent.value = editContent.value + '\n' + args[0]; applied = true;
+                        } else if (tool === 'append_after_line' && args.length >= 2) {
+                            const ln = parseInt(args[0], 10) - 1;
+                            if (ln >= 0 && ln < lines.length) { lines.splice(ln + 1, 0, args[1]); editContent.value = lines.join('\n'); applied = true; }
+                        } else if (tool === 'delete_lines' && args.length >= 2) {
+                            const start = parseInt(args[0], 10) - 1, end = parseInt(args[1], 10);
+                            if (start >= 0 && end <= lines.length) { lines.splice(start, end - start); editContent.value = lines.join('\n'); applied = true; }
                         }
-
-                        if (response && editor.value) {
-                            // Insert response at cursor position or append
-                            const selection = editor.value.getSelection();
-                            const id = {major: 1, minor: 1};
-                            const op = {identifier: id, range: selection, text: response, forceMoveMarkers: true};
-                            editor.value.executeEdits("llm-insert", [op]);
-                            editContent.value = editor.value.getValue();
-                        }
-                    } catch (e) {
-                        console.error('LLM error:', e);
                     }
+                    return applied;
+                };
 
+                const sendChat = async () => {
+                    if (!llmPrompt.value.trim() || !llmSettings.provider) return;
+                    const userMsg = llmPrompt.value.trim();
+                    chatMessages.value.push({role: 'user', content: userMsg});
+                    llmPrompt.value = '';
+                    llmLoading.value = true;
+                    const docContent = chatIncludeDoc.value ? editContent.value : '';
+                    let systemPrompt;
+                    if (chatUseTools.value) {
+                        systemPrompt = `You are Chicken, an editorial assistant. Respond in the same language as the document. You have tools to modify the document:
+- [TOOL:find_and_replace_with_regexp("pattern", "replacement")] - regex find/replace
+- [TOOL:append_to_the_end("text")] - append text to end
+- [TOOL:append_after_line(lineNum, "text")] - insert after line number
+- [TOOL:delete_lines(startLine, endLine)] - delete line range (1-indexed, inclusive)
+Use tools inline in your response. Explain what you're doing.`;
+                    } else {
+                        systemPrompt = `You are Chicken, an editorial assistant. Respond in the same language as the document. If you suggest document changes, put the modified document after [DOC] marker. Otherwise just respond normally.`;
+                    }
+                    const messages = chatMessages.value.filter(m => m.role !== 'system').map(m => ({role: m.role, content: m.content}));
+                    if (docContent) messages[messages.length - 1].content = `[Document]\n${docContent}\n[/Document]\n\n${messages[messages.length - 1].content}`;
+                    try {
+                        const response = await callLLM(messages, systemPrompt);
+                        chatMessages.value.push({role: 'assistant', content: response});
+                        if (chatUseTools.value) {
+                            applyTools(response);
+                        } else if (response.includes('[DOC]')) {
+                            const docPart = response.split('[DOC]')[1]?.trim();
+                            if (docPart) editContent.value = docPart;
+                        }
+                    } catch (e) { console.error('Chat error:', e); chatMessages.value.push({role: 'assistant', content: 'Error: ' + e.message}); }
                     llmLoading.value = false;
-                    closeLLMPopup();
                 };
 
                 const checkAuth = async () => {
@@ -1666,19 +1816,20 @@
                     isPanelCollapsed, editContent, editTitle, editorOptions, handleBeforeMount, handleEditorMount,
                     categories, notes, filteredNotes, currentCategory, currentNote, notesLoading, noteToDelete,
                     isEditing, isAuthenticated, showSettings, showCreateModal, showDeleteConfirm, computedTheme,
-                    showLLMPopup, showPreview, showLinkModal, showFindReplace, llmPrompt, llmLoading,
+                    showChatPanel, showPreview, showLinkModal, showFindReplace, showTranslateModal, llmPrompt, llmLoading,
+                    chatMessages, chatIncludeDoc, chatUseTools, translateLangMode, translateCustomLang,
                     settings, llmSettings, createForm, linkForm, findReplaceForm, linkSuggestions,
                     defaultLightIcons, defaultDevIcons, contextMenu, t, isDevicon, logoFilter, renderedMarkdown, previewMarkdown,
                     stripMd, displayNoteName, getNoteLangCode, formatDate, togglePanel, selectCategory, goBack,
                     selectNote, toggleEditMode, togglePreview, saveNote, cancelEdit, confirmDelete, deleteNote,
-                    openContextMenu, closeContextMenu, deleteContextNote, cloneNote, translateNote,
+                    openContextMenu, closeContextMenu, deleteContextNote, cloneNote, translateNote, doTranslate,
                     openCategoryContextMenu, deleteContextCategory, categoryToDelete, showCategoryDeleteConfirm, deleteCategory,
                     draftRecovery, loadDraft, discardDraft,
                     insertFormat, onLinkInput, selectLinkSuggestion, insertLink,
                     findNext, replaceOne, replaceAll,
                     openSettings, closeSettings, openCreateModal, closeCreateModal,
                     create, applyHue, saveSettings, saveAllSettings,
-                    getDefaultModel, closeLLMPopup, askLLM, openLLMChat, loadMoreIcons, forceUpdate
+                    getDefaultModel, toggleChatPanel, sendChat, loadMoreIcons, forceUpdate
                 };
             }
         });
