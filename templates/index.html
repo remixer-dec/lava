@@ -134,36 +134,50 @@
                 </div>
 
                 <div class="panel-content">
-                    <div class="breadcrumb" v-if="currentCategory">
-                        <button class="breadcrumb-btn" @click="goBack">
-                            <i class="icon light-icon-arrow-left"></i>
-                            <span>{{ t('categories') }}</span>
-                        </button>
-                        <span class="breadcrumb-current">{{ currentCategory.name }}</span>
-                    </div>
-
-                    <div v-if="!currentCategory" class="items-list">
-                        <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)">
-                            <div class="item-icon">
-                                <i v-if="isDevicon(cat.icon)" :class="cat.icon"></i>
-                                <i v-else :class="'icon light-icon-' + (cat.icon || 'folder')"></i>
-                            </div>
-                            <span class="item-name">{{ cat.name }}</span>
+                    <transition name="breadcrumb-slide">
+                        <div class="breadcrumb" v-if="currentCategory" :key="currentCategory.id">
+                            <button class="breadcrumb-btn" @click="goBack">
+                                <i class="icon light-icon-arrow-left"></i>
+                                <span>{{ t('categories') }}</span>
+                            </button>
+                            <span class="breadcrumb-current">{{ currentCategory.name }}</span>
                         </div>
-                        <div v-if="categories.length === 0" class="empty-state">{{ t('noCategories') }}</div>
-                    </div>
+                    </transition>
 
-                    <div v-else class="items-list" :class="{ loading: notesLoading }">
-                        <div v-for="note in filteredNotes" :key="note.id" class="item"
-                            :class="{ active: currentNote && currentNote.id === note.id }" @click="selectNote(note)"
-                            @contextmenu.prevent="openContextMenu($event, note)" :title="formatDate(note.updated_at)">
-                            <div class="item-icon">
-                                <i v-if="isDevicon(note.icon)" :class="note.icon"></i>
-                                <i v-else :class="'icon light-icon-' + (note.icon || 'file-text')"></i>
+                    <div class="panel-lists-container">
+                        <transition name="slide-left">
+                            <div v-if="!currentCategory" key="categories" class="items-list">
+                                <div v-for="cat in categories" :key="cat.id" class="item" @click="selectCategory(cat)"
+                                    @contextmenu.prevent="openCategoryContextMenu($event, cat)">
+                                    <div class="item-icon">
+                                        <i v-if="isDevicon(cat.icon)" :class="cat.icon"></i>
+                                        <i v-else :class="'icon light-icon-' + (cat.icon || 'folder')"></i>
+                                    </div>
+                                    <span class="item-name">{{ cat.name }}</span>
+                                </div>
+                                <div v-if="categories.length === 0" class="empty-state">{{ t('noCategories') }}</div>
                             </div>
-                            <span class="item-name">{{ displayNoteName(note.name) }}</span>
-                        </div>
-                        <div v-if="filteredNotes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
+                        </transition>
+
+                        <transition name="slide-right">
+                            <div v-if="currentCategory" :key="'notes-' + currentCategory.id" class="items-list"
+                                :class="{ loading: notesLoading }">
+                                <div v-for="note in filteredNotes" :key="note.id" class="item"
+                                    :class="{ active: currentNote && currentNote.id === note.id }"
+                                    @click="selectNote(note)" @contextmenu.prevent="openContextMenu($event, note)"
+                                    :title="formatDate(note.updated_at)">
+                                    <div class="item-icon">
+                                        <i v-if="isDevicon(note.icon)" :class="note.icon"></i>
+                                        <i v-else :class="'icon light-icon-' + (note.icon || 'file-text')"></i>
+                                    </div>
+                                    <span class="item-name">{{ displayNoteName(note.name) }}</span>
+                                    <span v-if="isAuthenticated && getNoteLangCode(note.name)"
+                                        class="item-lang-badge">{{
+                                        getNoteLangCode(note.name) }}</span>
+                                </div>
+                                <div v-if="filteredNotes.length === 0" class="empty-state">{{ t('noNotes') }}</div>
+                            </div>
+                        </transition>
                     </div>
                 </div>
             </aside>
@@ -180,9 +194,17 @@
                 <div v-else class="note-view">
                     <div class="note-header">
                         <div class="note-title-section">
-                            <input v-if="isEditing" type="text" class="note-title-input" v-model="editTitle"
-                                :placeholder="t('enterName')">
-                            <h1 v-else class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
+                            <div v-if="isEditing" class="note-title-edit-row">
+                                <input type="text" class="note-title-input" v-model="editTitle"
+                                    :placeholder="t('enterName')">
+                                <span v-if="getNoteLangCode(currentNote.name)" class="lang-code-badge">{{
+                                    getNoteLangCode(currentNote.name) }}</span>
+                            </div>
+                            <div v-else class="note-title-row">
+                                <h1 class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
+                                <span v-if="isAuthenticated && getNoteLangCode(currentNote.name)"
+                                    class="lang-code-badge">{{ getNoteLangCode(currentNote.name) }}</span>
+                            </div>
                         </div>
                         <div class="note-actions" v-if="isAuthenticated">
                             <button class="icon-btn" @click="openLLMChat" :title="t('askLLM')">
@@ -198,6 +220,17 @@
                             <button class="icon-btn danger" @click="confirmDelete" :title="t('delete')">
                                 <i class="icon light-icon-trash"></i>
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Auto-save recovery banner -->
+                    <div v-if="draftRecovery.show" class="draft-recovery-banner">
+                        <span>{{ t('draftFound') }} ({{ draftRecovery.charDiff > 0 ? '+' : '' }}{{
+                            draftRecovery.charDiff }} chars)</span>
+                        <div class="draft-recovery-actions">
+                            <button class="btn-small" @click="loadDraft">{{ t('loadDraft') }}</button>
+                            <button class="btn-small btn-secondary" @click="discardDraft">{{ t('discardDraft')
+                                }}</button>
                         </div>
                     </div>
 
@@ -261,20 +294,28 @@
         </div>
 
         <!-- Context Menu -->
-        <div v-if="contextMenu.visible" class="context-menu"
+        <div v-if="contextMenu.visible && isAuthenticated" class="context-menu"
             :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
-            <div class="context-menu-item" @click="cloneNote" v-if="isAuthenticated">
-                <i class="icon light-icon-copy"></i>
-                {{ t('clone') }}
-            </div>
-            <div class="context-menu-item" @click="translateNote" v-if="isAuthenticated">
-                <i class="icon light-icon-language"></i>
-                {{ t('translate') }}
-            </div>
-            <div class="context-menu-item danger" @click="deleteContextNote" v-if="isAuthenticated">
-                <i class="icon light-icon-trash"></i>
-                {{ t('delete') }}
-            </div>
+            <template v-if="contextMenu.type === 'note'">
+                <div class="context-menu-item" @click="cloneNote">
+                    <i class="icon light-icon-copy"></i>
+                    {{ t('clone') }}
+                </div>
+                <div class="context-menu-item" @click="translateNote">
+                    <i class="icon light-icon-language"></i>
+                    {{ t('translate') }}
+                </div>
+                <div class="context-menu-item danger" @click="deleteContextNote">
+                    <i class="icon light-icon-trash"></i>
+                    {{ t('delete') }}
+                </div>
+            </template>
+            <template v-else-if="contextMenu.type === 'category'">
+                <div class="context-menu-item danger" @click="deleteContextCategory">
+                    <i class="icon light-icon-trash"></i>
+                    {{ t('delete') }}
+                </div>
+            </template>
         </div>
 
         <!-- Settings Modal -->
@@ -427,6 +468,28 @@
             </div>
         </div>
 
+        <!-- Category Delete Confirmation -->
+        <div class="modal-overlay" v-if="showCategoryDeleteConfirm" @click.self="showCategoryDeleteConfirm = false">
+            <div class="modal modal-small">
+                <div class="modal-header">
+                    <h2>{{ t('confirmDelete') }}</h2>
+                    <button class="icon-btn" @click="showCategoryDeleteConfirm = false">
+                        <i class="icon light-icon-x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
+                        alt="Lava" class="delete-modal-logo" :style="{ filter: logoFilter }">
+                    <p class="delete-modal-text">{{ t('deleteCategoryWarning') }}<br><strong v-if="categoryToDelete">{{
+                            categoryToDelete.name }}</strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" @click="showCategoryDeleteConfirm = false">{{ t('cancel') }}</button>
+                    <button class="btn btn-danger" @click="deleteCategory">{{ t('throwIntoLava') }}</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Link Insert Modal -->
         <div class="modal-overlay" v-if="showLinkModal" @click.self="showLinkModal = false">
             <div class="modal modal-small">
@@ -502,7 +565,7 @@
     }
     </script>
     <script type="module">
-        import {createApp, ref, toRaw, reactive, computed, watch, onMounted, nextTick} from 'https://unpkg.com/vue@3.6.0-alpha.6/dist/vue.esm-browser.js';
+        import {createApp, ref, toRaw, reactive, computed, watch, onMounted, onUnmounted, nextTick} from 'https://unpkg.com/vue@3.6.0-alpha.6/dist/vue.esm-browser.js';
         import {marked} from 'https://unpkg.com/marked@17.0.1/lib/marked.esm.js';
         import {install as VueMonacoEditorPlugin} from 'https://unpkg.com/@guolao/vue-monaco-editor@1.6.0/lib/es/index.js'
 
@@ -546,8 +609,19 @@
                     visible: false,
                     x: 0,
                     y: 0,
-                    note: null
+                    note: null,
+                    category: null,
+                    type: null // 'note' or 'category'
                 });
+
+                const draftRecovery = reactive({
+                    show: false,
+                    charDiff: 0,
+                    content: ''
+                });
+
+                let autoSaveInterval = null;
+                let originalNoteContent = '';
 
                 const settings = reactive({
                     theme: 'dark',
@@ -649,6 +723,12 @@
                     return n;
                 };
 
+                const getNoteLangCode = (name) => {
+                    if (!name) return null;
+                    const match = name.match(/__([a-z]{2})(?:\.md)?$/i);
+                    return match ? match[1].toUpperCase() : null;
+                };
+
                 const renderedMarkdown = computed(() => {
                     if (!currentNote.value) return '';
                     let content = currentNote.value.content || '';
@@ -737,16 +817,122 @@
                     if (isEditing.value) {
                         editContent.value = currentNote.value.content || '';
                         editTitle.value = displayNoteName(currentNote.value.name);
+                        originalNoteContent = currentNote.value.content || '';
                         await nextTick();
+                        checkForDraft();
+                        startAutoSave();
+                    } else {
+                        stopAutoSave();
+                        draftRecovery.show = false;
                     }
+                };
+
+                const startAutoSave = () => {
+                    stopAutoSave();
+                    autoSaveInterval = setInterval(() => {
+                        if (currentNote.value && editContent.value && editContent.value.trim()) {
+                            const draft = {
+                                noteId: currentNote.value.id,
+                                content: editContent.value,
+                                savedAt: Date.now()
+                            };
+                            localStorage.setItem('lava-draft', JSON.stringify(draft));
+                        }
+                    }, 30000);
+                };
+
+                const stopAutoSave = () => {
+                    if (autoSaveInterval) {
+                        clearInterval(autoSaveInterval);
+                        autoSaveInterval = null;
+                    }
+                };
+
+                const checkForDraft = () => {
+                    const draftStr = localStorage.getItem('lava-draft');
+                    if (!draftStr || !currentNote.value) return;
+
+                    try {
+                        const draft = JSON.parse(draftStr);
+                        if (draft.noteId !== currentNote.value.id) return;
+
+                        const noteUpdated = new Date(currentNote.value.updated_at).getTime();
+                        if (draft.savedAt > noteUpdated && draft.content !== currentNote.value.content) {
+                            draftRecovery.content = draft.content;
+                            draftRecovery.charDiff = draft.content.length - (currentNote.value.content || '').length;
+                            draftRecovery.show = true;
+                        }
+                    } catch (e) {console.error(e);}
+                };
+
+                const loadDraft = () => {
+                    if (!draftRecovery.content) return;
+                    const ed = monacoEditor.value ? toRaw(monacoEditor.value) : null;
+                    if (ed) {
+                        ed.executeEdits('load-draft', [{
+                            range: ed.getModel().getFullModelRange(),
+                            text: draftRecovery.content,
+                            forceMoveMarkers: true
+                        }]);
+                    } else {
+                        editContent.value = draftRecovery.content;
+                    }
+                    draftRecovery.show = false;
+                    localStorage.removeItem('lava-draft');
+                };
+
+                const discardDraft = () => {
+                    draftRecovery.show = false;
+                    draftRecovery.content = '';
+                    localStorage.removeItem('lava-draft');
                 };
 
                 const togglePreview = () => {
                     showPreview.value = !showPreview.value;
                 };
 
+                let editorDecorations = null;
+
                 const handleEditorMount = (editorInstance) => {
                     monacoEditor.value = editorInstance;
+                    setupChangeTracking(editorInstance);
+                };
+
+                const setupChangeTracking = (ed) => {
+                    const updateDecorations = () => {
+                        if (!ed || !originalNoteContent) return;
+
+                        const originalLines = originalNoteContent.split('\n');
+                        const currentLines = ed.getValue().split('\n');
+                        const changedRanges = [];
+
+                        const maxLines = Math.max(originalLines.length, currentLines.length);
+                        for (let i = 0; i < maxLines; i++) {
+                            const orig = originalLines[i] || '';
+                            const curr = currentLines[i] || '';
+                            if (orig !== curr && i < currentLines.length) {
+                                changedRanges.push({
+                                    range: new monaco.Range(i + 1, 1, i + 2, 1),
+                                    options: {
+                                        isWholeLine: true,
+                                        linesDecorationsClassName: 'line-changed-decoration'
+                                    }
+                                });
+                            }
+                        }
+
+                        if (editorDecorations) {
+                            editorDecorations.clear();
+                        }
+                        editorDecorations = ed.createDecorationsCollection(changedRanges);
+                    };
+
+                    ed.onDidChangeModelContent(() => {
+                        updateDecorations();
+                    });
+
+                    // Initial decoration
+                    setTimeout(updateDecorations, 100);
                 };
 
                 // URL routing
@@ -863,6 +1049,9 @@
                             currentNote.value = await res.json();
                             isEditing.value = false;
                             showPreview.value = false;
+                            stopAutoSave();
+                            localStorage.removeItem('lava-draft');
+                            draftRecovery.show = false;
                             await loadNotes(currentCategory.value.id);
                             updateURL();
                             updatePageTitle();
@@ -875,6 +1064,8 @@
                     showPreview.value = false;
                     editContent.value = '';
                     editTitle.value = '';
+                    stopAutoSave();
+                    draftRecovery.show = false;
                 };
 
                 const noteToDelete = ref(null);
@@ -903,15 +1094,30 @@
 
                 // Context menu
                 const openContextMenu = (e, note) => {
+                    if (!isAuthenticated.value) return;
                     contextMenu.x = e.clientX;
                     contextMenu.y = e.clientY;
                     contextMenu.note = note;
+                    contextMenu.category = null;
+                    contextMenu.type = 'note';
+                    contextMenu.visible = true;
+                };
+
+                const openCategoryContextMenu = (e, cat) => {
+                    if (!isAuthenticated.value) return;
+                    contextMenu.x = e.clientX;
+                    contextMenu.y = e.clientY;
+                    contextMenu.category = cat;
+                    contextMenu.note = null;
+                    contextMenu.type = 'category';
                     contextMenu.visible = true;
                 };
 
                 const closeContextMenu = () => {
                     contextMenu.visible = false;
                     contextMenu.note = null;
+                    contextMenu.category = null;
+                    contextMenu.type = null;
                 };
 
                 const deleteContextNote = () => {
@@ -919,6 +1125,27 @@
                     noteToDelete.value = contextMenu.note;
                     showDeleteConfirm.value = true;
                     closeContextMenu();
+                };
+
+                const categoryToDelete = ref(null);
+                const showCategoryDeleteConfirm = ref(false);
+
+                const deleteContextCategory = () => {
+                    if (!contextMenu.category) return;
+                    categoryToDelete.value = contextMenu.category;
+                    showCategoryDeleteConfirm.value = true;
+                    closeContextMenu();
+                };
+
+                const deleteCategory = async () => {
+                    const cat = categoryToDelete.value;
+                    if (!cat) return;
+                    try {
+                        await fetch(api(`categories/${cat.id}`), {method: 'DELETE'});
+                        showCategoryDeleteConfirm.value = false;
+                        categoryToDelete.value = null;
+                        await loadCategories();
+                    } catch (e) {console.error(e);}
                 };
 
                 const cloneNote = async () => {
@@ -1323,6 +1550,54 @@
                     } catch (e) {console.error(e);}
                 };
 
+                // Syntax highlighting for code blocks using syntax-highlight-element
+                let syntaxHighlightLoaded = false;
+                const loadSyntaxHighlight = async () => {
+                    if (syntaxHighlightLoaded) return;
+                    try {
+                        // Load the theme CSS
+                        let sTheme = 'prettylights.min.css'
+                        await addStyle(`https://cdn.jsdelivr.net/npm/syntax-highlight-element@1/dist/themes/${sTheme}`);
+                        // Load the web component
+                        await import('https://cdn.jsdelivr.net/npm/syntax-highlight-element@1/+esm');
+                        syntaxHighlightLoaded = true;
+                    } catch (e) {console.error('Failed to load syntax-highlight-element', e);}
+                };
+
+                const applySyntaxHighlight = async () => {
+                    await nextTick();
+                    const codeBlocks = document.querySelectorAll('.markdown-content pre code:not([data-highlighted])');
+                    if (codeBlocks.length === 0) return;
+                    let languages = new Set()
+
+                    codeBlocks.forEach(block => {
+                        const lang = block.className.match(/language-(\w+)/)?.[1] || 'js';
+                        const code = block.textContent;
+                        const pre = block.parentElement;
+                        languages.add(lang)
+
+                        // Create syntax-highlight element and replace the pre>code structure
+                        const syntaxEl = document.createElement('syntax-highlight');
+                        syntaxEl.setAttribute('language', lang);
+                        syntaxEl.textContent = code;
+
+                        pre.firstChild.replaceWith(syntaxEl);
+                    });
+                    window.she = window.she || {};
+                    window.she.config = {
+                        "languages": [...languages]
+                    }
+                    await loadSyntaxHighlight();
+                };
+
+                watch(() => renderedMarkdown.value, () => {
+                    if (!isEditing.value) applySyntaxHighlight();
+                });
+
+                watch(() => currentNote.value, () => {
+                    if (!isEditing.value) applySyntaxHighlight();
+                });
+
                 onMounted(async () => {
                     loadSettingsFromStorage();
                     await checkAuth();
@@ -1383,9 +1658,11 @@
                     showLLMPopup, showPreview, showLinkModal, showFindReplace, llmPrompt, llmLoading,
                     settings, llmSettings, createForm, linkForm, findReplaceForm, linkSuggestions,
                     defaultLightIcons, defaultDevIcons, contextMenu, t, isDevicon, logoFilter, renderedMarkdown, previewMarkdown,
-                    stripMd, displayNoteName, formatDate, togglePanel, selectCategory, goBack,
+                    stripMd, displayNoteName, getNoteLangCode, formatDate, togglePanel, selectCategory, goBack,
                     selectNote, toggleEditMode, togglePreview, saveNote, cancelEdit, confirmDelete, deleteNote,
                     openContextMenu, closeContextMenu, deleteContextNote, cloneNote, translateNote,
+                    openCategoryContextMenu, deleteContextCategory, categoryToDelete, showCategoryDeleteConfirm, deleteCategory,
+                    draftRecovery, loadDraft, discardDraft,
                     insertFormat, onLinkInput, selectLinkSuggestion, insertLink,
                     findNext, replaceOne, replaceAll,
                     openSettings, closeSettings, openCreateModal, closeCreateModal,

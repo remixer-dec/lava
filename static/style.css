@@ -124,8 +124,9 @@ i.icon {
 
 .panel-content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .breadcrumb {
@@ -516,7 +517,7 @@ i.icon {
 }
 
 .markdown-content code {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: "SF Mono", Consolas, monospace;
@@ -524,7 +525,7 @@ i.icon {
 }
 
 .markdown-content pre {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   padding: 16px;
   border-radius: 8px;
   overflow-x: auto;
@@ -888,4 +889,178 @@ h3 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Panel Lists Container */
+.panel-lists-container {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.panel-lists-container .items-list {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+}
+
+/* Vue Transitions - Slide Left (categories leaving) */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-left-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+/* Vue Transitions - Slide Right (notes entering) */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.slide-right-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.slide-right-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Vue Transitions - Breadcrumb */
+.breadcrumb-slide-enter-active,
+.breadcrumb-slide-leave-active {
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease,
+    max-height 0.3s ease,
+    padding 0.3s ease;
+  overflow: hidden;
+}
+
+.breadcrumb-slide-enter-from,
+.breadcrumb-slide-leave-to {
+  transform: translateX(30px);
+  opacity: 0;
+  max-height: 0;
+  padding: 0 16px;
+}
+
+.breadcrumb-slide-enter-to,
+.breadcrumb-slide-leave-from {
+  max-height: 60px;
+}
+
+/* Language Code Badge */
+.note-title-edit-row,
+.note-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.lang-code-badge {
+  background: var(--accent);
+  color: var(--bg-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Sidebar item language badge */
+.item-lang-badge {
+  background: var(--accent-muted);
+  color: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.item:hover .item-lang-badge,
+.item.active .item-lang-badge {
+  opacity: 1;
+}
+
+/* Draft Recovery Banner */
+.draft-recovery-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 24px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.draft-recovery-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: none;
+  background: var(--accent);
+  color: var(--bg-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.btn-small:hover {
+  background: var(--accent-hover);
+}
+
+.btn-small.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn-small.btn-secondary:hover {
+  background: var(--bg-primary);
+}
+
+/* Monaco Editor Line Changed Decoration */
+.line-changed-decoration {
+  background: var(--accent-muted);
+  width: 3px !important;
+  margin-left: 3px;
+}
+
+syntax-highlight {
+  color-scheme: dark;
+}
+
+.light-theme syntax-highlight {
+  color-scheme: light;
+  background-color: var(--bg-secondary);
 }

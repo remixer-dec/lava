@@ -60,6 +60,10 @@ const translations = {
     replaceAll: "Replace All",
     noteNotFound: "Note not found",
     noteDeleted: "This note has been deleted or does not exist.",
+    deleteCategoryWarning: "Throw this category and all its notes into lava?",
+    draftFound: "Unsaved draft found",
+    loadDraft: "Load",
+    discardDraft: "Discard",
   },
   ru: {
     appName: "Lava Notes",
@@ -122,6 +126,10 @@ const translations = {
     replaceAll: "Заменить все",
     noteNotFound: "Заметка не найдена",
     noteDeleted: "Эта заметка была удалена или не существует.",
+    deleteCategoryWarning: "Бросить эту категорию и все её заметки в лаву?",
+    draftFound: "Найден несохранённый черновик",
+    loadDraft: "Загрузить",
+    discardDraft: "Отклонить",
   },
 };
 
