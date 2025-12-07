@@ -10,7 +10,7 @@ import (
 	"lava-notes/internal/db"
 )
 
-var noteURLPattern = regexp.MustCompile(`/[^/]+/note/(\d+)`)
+var noteURLPattern = regexp.MustCompile(`/note/(\d+)`)
 
 type SSR struct {
 	db           *db.DB
