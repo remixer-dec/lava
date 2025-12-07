@@ -35,9 +35,3 @@ type AuthToken struct {
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
-
-type Settings struct {
-	Theme    string `json:"theme"`
-	Language string `json:"language"`
-	HueShift int    `json:"hue_shift"`
-}

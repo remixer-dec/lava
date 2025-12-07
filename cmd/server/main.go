@@ -138,17 +138,6 @@ func main() {
 		}
 	}, false))
 
-	mux.HandleFunc("/api/settings", a.Middleware(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.GetSettings(w, r)
-		case http.MethodPut:
-			h.UpdateSettings(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}, false))
-
 	mux.HandleFunc("/api/auth/check", a.Middleware(h.CheckAuth, false))
 	mux.HandleFunc("/api/auth/logout", h.Logout)
 	mux.HandleFunc("/auth/login", h.Login)

@@ -369,35 +369,6 @@ func (h *Handlers) DeleteNote(w http.ResponseWriter, r *http.Request) {
 	h.respond(w, nil, http.StatusNoContent)
 }
 
-// Settings
-func (h *Handlers) GetSettings(w http.ResponseWriter, r *http.Request) {
-	settings, err := h.db.GetSettings()
-	if err != nil {
-		h.error(w, "Failed to get settings", http.StatusInternalServerError)
-		return
-	}
-	h.respond(w, settings, http.StatusOK)
-}
-
-func (h *Handlers) UpdateSettings(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Theme    string `json:"theme"`
-		Language string `json:"language"`
-		HueShift int    `json:"hue_shift"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.db.UpdateSettings(req.Theme, req.Language, req.HueShift); err != nil {
-		h.error(w, "Failed to update settings", http.StatusInternalServerError)
-		return
-	}
-
-	h.respond(w, map[string]string{"status": "ok"}, http.StatusOK)
-}
-
 // Auth
 func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")

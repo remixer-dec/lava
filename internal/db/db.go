@@ -58,13 +58,6 @@ func (d *DB) migrate() error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			expires_at DATETIME NOT NULL
 		)`,
-		`CREATE TABLE IF NOT EXISTS settings (
-			id INTEGER PRIMARY KEY CHECK (id = 1),
-			theme TEXT DEFAULT 'dark',
-			language TEXT DEFAULT 'en',
-			hue_shift INTEGER DEFAULT 0
-		)`,
-		`INSERT OR IGNORE INTO settings (id) VALUES (1)`,
 		`CREATE TABLE IF NOT EXISTS views (
 			note_id INTEGER PRIMARY KEY,
 			count INTEGER DEFAULT 0
@@ -229,22 +222,6 @@ func (d *DB) GetAuthToken(token string) (*models.AuthToken, error) {
 
 func (d *DB) MarkTokenUsed(token string) error {
 	_, err := d.conn.Exec(`UPDATE auth_tokens SET used = TRUE WHERE token = ?`, token)
-	return err
-}
-
-// Settings
-func (d *DB) GetSettings() (*models.Settings, error) {
-	var s models.Settings
-	err := d.conn.QueryRow(`SELECT theme, language, hue_shift FROM settings WHERE id = 1`).
-		Scan(&s.Theme, &s.Language, &s.HueShift)
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
-}
-
-func (d *DB) UpdateSettings(theme, language string, hueShift int) error {
-	_, err := d.conn.Exec(`UPDATE settings SET theme = ?, language = ?, hue_shift = ? WHERE id = 1`, theme, language, hueShift)
 	return err
 }
 
