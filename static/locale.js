@@ -72,6 +72,7 @@ const translations = {
     encryptionKey: "Encryption key",
     encryptionKeyPlaceholder: "Key for private notes...",
     chicken: "Chicken",
+    encrypted: "Encrypted",
   },
   ru: {
     appName: "Lava Notes",
@@ -110,7 +111,7 @@ const translations = {
     none: "Нет",
     endpoint: "Свой endpoint",
     model: "Модель",
-    askLLM: "Спросить Chicken",
+    askLLM: "Спросить Курицу",
     prompt: "Промпт",
     enterPrompt: "Что вы хотите спросить?",
     askPromptOnly: "Спросить (только промпт)",
@@ -145,7 +146,8 @@ const translations = {
     private: "Приватная",
     encryptionKey: "Ключ шифрования",
     encryptionKeyPlaceholder: "Ключ для приватных заметок...",
-    chicken: "Chicken",
+    chicken: "Курица",
+    encrypted: "Зашифровано",
   },
 };
 
