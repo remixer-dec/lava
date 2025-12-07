@@ -517,7 +517,7 @@ i.icon {
 }
 
 .markdown-content code {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: "SF Mono", Consolas, monospace;
@@ -525,7 +525,7 @@ i.icon {
 }
 
 .markdown-content pre {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   padding: 16px;
   border-radius: 8px;
   overflow-x: auto;
@@ -910,7 +910,9 @@ h3 {
 /* Vue Transitions - Slide Left (categories leaving) */
 .slide-left-enter-active,
 .slide-left-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .slide-left-enter-from {
@@ -926,7 +928,9 @@ h3 {
 /* Vue Transitions - Slide Right (notes entering) */
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .slide-right-enter-from {
@@ -942,25 +946,25 @@ h3 {
 /* Vue Transitions - Breadcrumb */
 .breadcrumb-slide-enter-active,
 .breadcrumb-slide-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease, max-height 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease,
+    max-height 0.3s ease,
+    padding 0.3s ease;
   overflow: hidden;
 }
 
-.breadcrumb-slide-enter-from {
+.breadcrumb-slide-enter-from,
+.breadcrumb-slide-leave-to {
   transform: translateX(30px);
   opacity: 0;
   max-height: 0;
+  padding: 0 16px;
 }
 
 .breadcrumb-slide-enter-to,
 .breadcrumb-slide-leave-from {
   max-height: 60px;
-}
-
-.breadcrumb-slide-leave-to {
-  transform: translateX(30px);
-  opacity: 0;
-  max-height: 0;
 }
 
 /* Language Code Badge */
@@ -1050,4 +1054,13 @@ h3 {
   background: var(--accent-muted);
   width: 3px !important;
   margin-left: 3px;
+}
+
+syntax-highlight {
+  color-scheme: dark;
+}
+
+.light-theme syntax-highlight {
+  color-scheme: light;
+  background-color: var(--bg-secondary);
 }
