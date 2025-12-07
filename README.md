@@ -14,3 +14,16 @@ Developed to provide balance between nice UI & UX, minimalism, performace and si
 - View stats, optional SSR
 
 Most of the code was implemented with assistance of Claude Code, I guided it to implement requested features in a way that aligns with my vision of the project and fixed the bugs that it made.
+
+
+### Stack
+#### Frontend:
+- [Vue.JS](https://www.npmjs.com/package/vue) v3
+- Editor: [Vue Monaco Editor](https://www.npmjs.com/package/@guolao/vue-monaco-editor) ([Monaco Editor](https://github.com/microsoft/monaco-editor) + [state-local](https://www.npmjs.com/package/state-local) + [monaco loader](https://www.npmjs.com/package/@monaco-editor/loader))  
+- Markdown support: [Marked](https://www.npmjs.com/package/marked)
+- Syntax highlighting: [Syntax-highlight-element](https://www.npmjs.com/package/syntax-highlight-element)
+- Icons: [Devicon](github.com/devicons/devicon/), [Light icons](https://github.com/lightvue/light-icons)
+
+#### Backend:
+- [go-sqlite](https://github.com/glebarez/go-sqlite)
+- [golang-jwt](https://github.com/golang-jwt/jwt/)
