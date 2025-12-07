@@ -352,6 +352,7 @@
                                 <div class="chat-panel-header">
                                     <img src="https://wiki.hypixel.net/images/a/ae/SkyBlock_entities_fried_chicken.gif" alt="Chicken" style="width:28px;height:28px;border-radius:4px">
                                     <h3>{{ t('chicken') }}</h3>
+                                    <button class="icon-btn" @click="clearChat" title="Clear chat"><i class="icon light-icon-trash"></i></button>
                                     <button class="icon-btn" @click="showChatPanel = false"><i class="icon light-icon-x"></i></button>
                                 </div>
                                 <div class="chat-panel-body">
@@ -1120,7 +1121,10 @@
                             const res = await fetch(api(`notes/${noteId}`));
                             if (res.ok) {
                                 const note = await res.json();
-                                // Find and select category
+                                if (note.icon === 'lock' && settings.encryptionKey) {
+                                    note.name = await decryptText(note.name, settings.encryptionKey);
+                                    note.content = await decryptText(note.content || '', settings.encryptionKey);
+                                }
                                 const cat = categories.value.find(c => c.id === note.category_id);
                                 if (cat) {
                                     currentCategory.value = cat;
@@ -1692,6 +1696,13 @@
                     return defaults[llmSettings.provider] || '';
                 };
 
+                const stripThinking = (text) => {
+                    if (!text) return text;
+                    return text.replace(/^[\s\S]*?<\/think(?:ing)?>/i, '').trim();
+                };
+
+                const clearChat = () => { chatMessages.value = []; };
+
                 const sendChat = async () => {
                     if (!llmPrompt.value.trim() || !llmSettings.provider) return;
                     const userMsg = llmPrompt.value.trim();
@@ -1700,19 +1711,21 @@
                     llmLoading.value = true;
                     const docContent = chatIncludeDoc.value ? editContent.value : '';
                     const useTools = chatUseTools.value && chatIncludeDoc.value;
+                    const lineCount = docContent.split('\n').length;
                     const systemPrompt = useTools
-                        ? 'You are Chicken, an editorial assistant. Match document language. Use provided tools to edit.'
+                        ? `You are Chicken, an editorial assistant. Match document language. Use provided tools to edit. Each newline = 1 line, total lines: ${lineCount}.`
                         : 'You are Chicken, an editorial assistant. Match document language.' + (docContent ? ' Put modified document between [DOC] and [/DOC] tags.' : '');
                     const messages = chatMessages.value.filter(m => m.role !== 'system').map(m => ({role: m.role, content: m.content}));
                     if (docContent) messages[messages.length - 1].content = `<doc>\n${docContent}\n</doc>\n${messages[messages.length - 1].content}`;
                     try {
-                        const response = await callLLM(messages, systemPrompt, useTools ? llmTools : null);
-                        chatMessages.value.push({role: 'assistant', content: response});
-                        if (!useTools && response.includes('[DOC]')) {
+                        let response = await callLLM(messages, systemPrompt, useTools ? llmTools : null);
+                        response = stripThinking(response);
+                        chatMessages.value.push({role: 'assistant', content: response || '(empty response)'});
+                        if (!useTools && response?.includes('[DOC]')) {
                             const match = response.match(/\[DOC\]([\s\S]*?)(?:\[\/DOC\]|$)/);
                             if (match?.[1]) editContent.value = match[1].trim();
                         }
-                    } catch (e) { console.error('Chat error:', e); chatMessages.value.push({role: 'assistant', content: 'Error: ' + e.message}); }
+                    } catch (e) { console.error('Chat error:', e); chatMessages.value.push({role: 'assistant', content: 'Error: ' + (e.message || e)}); }
                     llmLoading.value = false;
                 };
 
@@ -1789,6 +1802,10 @@
                             const res = await fetchOnce(api(`notes/${e.state.noteId}`));
                             if (res.ok) {
                                 const note = await res.json();
+                                if (note.icon === 'lock' && settings.encryptionKey) {
+                                    note.name = await decryptText(note.name, settings.encryptionKey);
+                                    note.content = await decryptText(note.content || '', settings.encryptionKey);
+                                }
                                 const cat = categories.value.find(c => c.id === note.category_id);
                                 if (cat && cat.id !== currentCategory.value?.id) {
                                     currentCategory.value = cat;
@@ -1842,7 +1859,7 @@
                     findNext, replaceOne, replaceAll,
                     openSettings, closeSettings, openCreateModal, closeCreateModal,
                     create, applyHue, saveSettings, saveAllSettings,
-                    getDefaultModel, toggleChatPanel, sendChat, loadMoreIcons, forceUpdate
+                    getDefaultModel, toggleChatPanel, sendChat, clearChat, loadMoreIcons, forceUpdate
                 };
             }
         });
