@@ -16,6 +16,7 @@ import (
 	"lava-notes/internal/cache"
 	"lava-notes/internal/db"
 	"lava-notes/internal/handlers"
+	"lava-notes/internal/ssr"
 	"lava-notes/internal/views"
 )
 
@@ -23,6 +24,7 @@ func main() {
 	port := flag.Int("port", 2025, "Server port")
 	dataDir := flag.String("data", "./data", "Data directory")
 	generateLink := flag.Bool("generate-link", false, "Generate a new login link")
+	enableSSR := flag.Bool("ssr", false, "Enable SSR for SEO on note pages")
 	flag.Parse()
 
 	if err := os.MkdirAll(*dataDir, 0755); err != nil {
@@ -152,7 +154,15 @@ func main() {
 	mux.HandleFunc("/auth/login", h.Login)
 
 	// Serve index.html for all other routes (SPA)
+	var ssrHandler *ssr.SSR
+	if *enableSSR {
+		ssrHandler = ssr.New(database, "./templates/index.html")
+	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Try SSR for note pages if enabled
+		if ssrHandler != nil && ssrHandler.ServeHTTP(w, r) {
+			return
+		}
 		http.ServeFile(w, r, "./templates/index.html")
 	})
 
