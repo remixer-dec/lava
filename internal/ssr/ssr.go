@@ -1,7 +1,6 @@
 package ssr
 
 import (
-	"html"
 	"net/http"
 	"os"
 	"regexp"
@@ -78,9 +77,9 @@ func (s *SSR) ServeHTTP(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	// Create SEO content
-	title := html.EscapeString(note.Name)
-	content := html.EscapeString(stripHTML(note.Content))
+	// Create SEO content (content is from trusted editor, strip HTML for clean text)
+	title := note.Name
+	content := stripHTML(note.Content)
 	ssrContent := "<h1>" + title + "</h1><article>" + content + "</article>"
 
 	// Replace placeholder
