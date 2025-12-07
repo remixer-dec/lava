@@ -23,6 +23,11 @@ func New(path string) (*DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
+	// Enable foreign key enforcement for CASCADE deletes
+	if _, err := conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
+	}
+
 	db := &DB{conn: conn}
 	if err := db.migrate(); err != nil {
 		return nil, fmt.Errorf("failed to migrate: %w", err)
@@ -58,13 +63,10 @@ func (d *DB) migrate() error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			expires_at DATETIME NOT NULL
 		)`,
-		`CREATE TABLE IF NOT EXISTS settings (
-			id INTEGER PRIMARY KEY CHECK (id = 1),
-			theme TEXT DEFAULT 'dark',
-			language TEXT DEFAULT 'en',
-			hue_shift INTEGER DEFAULT 0
+		`CREATE TABLE IF NOT EXISTS views (
+			note_id INTEGER PRIMARY KEY,
+			count INTEGER DEFAULT 0
 		)`,
-		`INSERT OR IGNORE INTO settings (id) VALUES (1)`,
 	}
 
 	for _, q := range queries {
@@ -228,18 +230,43 @@ func (d *DB) MarkTokenUsed(token string) error {
 	return err
 }
 
-// Settings
-func (d *DB) GetSettings() (*models.Settings, error) {
-	var s models.Settings
-	err := d.conn.QueryRow(`SELECT theme, language, hue_shift FROM settings WHERE id = 1`).
-		Scan(&s.Theme, &s.Language, &s.HueShift)
+// Views
+func (d *DB) GetAllViews() (map[int64]int64, error) {
+	rows, err := d.conn.Query(`SELECT note_id, count FROM views`)
 	if err != nil {
 		return nil, err
 	}
-	return &s, nil
+	defer rows.Close()
+
+	views := make(map[int64]int64)
+	for rows.Next() {
+		var noteID, count int64
+		if err := rows.Scan(&noteID, &count); err != nil {
+			return nil, err
+		}
+		views[noteID] = count
+	}
+	return views, nil
 }
 
-func (d *DB) UpdateSettings(theme, language string, hueShift int) error {
-	_, err := d.conn.Exec(`UPDATE settings SET theme = ?, language = ?, hue_shift = ? WHERE id = 1`, theme, language, hueShift)
-	return err
+func (d *DB) SaveViews(views map[int64]int64) error {
+	tx, err := d.conn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT OR REPLACE INTO views (note_id, count) VALUES (?, ?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for noteID, count := range views {
+		if _, err := stmt.Exec(noteID, count); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

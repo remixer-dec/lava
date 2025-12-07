@@ -10,6 +10,7 @@ services:
       - lava-data:/app/data
     environment:
       - JWT_SECRET=${JWT_SECRET:-}
+      - IP_HEADER=CF-Connecting-IP
       - BASE_URL=${BASE_URL:-http://localhost:2025}
     restart: unless-stopped
 

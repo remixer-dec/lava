@@ -8,18 +8,23 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"lava-notes/internal/auth"
 	"lava-notes/internal/cache"
 	"lava-notes/internal/db"
 	"lava-notes/internal/handlers"
+	"lava-notes/internal/ssr"
+	"lava-notes/internal/views"
 )
 
 func main() {
 	port := flag.Int("port", 2025, "Server port")
 	dataDir := flag.String("data", "./data", "Data directory")
 	generateLink := flag.Bool("generate-link", false, "Generate a new login link")
+	enableSSR := flag.Bool("ssr", false, "Enable SSR for SEO on note pages")
 	flag.Parse()
 
 	if err := os.MkdirAll(*dataDir, 0755); err != nil {
@@ -45,7 +50,17 @@ func main() {
 
 	c := cache.New()
 	a := auth.New(database, jwtSecret)
-	h := handlers.New(database, c, a)
+	v := views.New(database)
+	h := handlers.New(database, c, a, v)
+
+	// Graceful shutdown for views persistence
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
+		v.Shutdown()
+		os.Exit(0)
+	}()
 
 	if *generateLink {
 		baseURL := os.Getenv("BASE_URL")
@@ -123,23 +138,20 @@ func main() {
 		}
 	}, false))
 
-	mux.HandleFunc("/api/settings", a.Middleware(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.GetSettings(w, r)
-		case http.MethodPut:
-			h.UpdateSettings(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}, false))
-
 	mux.HandleFunc("/api/auth/check", a.Middleware(h.CheckAuth, false))
 	mux.HandleFunc("/api/auth/logout", h.Logout)
 	mux.HandleFunc("/auth/login", h.Login)
 
 	// Serve index.html for all other routes (SPA)
+	var ssrHandler *ssr.SSR
+	if *enableSSR {
+		ssrHandler = ssr.New(database, "./templates/index.html")
+	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Try SSR for note pages if enabled
+		if ssrHandler != nil && ssrHandler.ServeHTTP(w, r) {
+			return
+		}
 		http.ServeFile(w, r, "./templates/index.html")
 	})
 

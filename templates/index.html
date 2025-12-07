@@ -98,6 +98,16 @@
             width: 100%;
             position: relative;
         }
+
+        .ssr {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            z-index: -4;
+            transform: rotateX(90.01deg);
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -107,6 +117,7 @@
         <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif" alt="Loading"
             class="splash-logo">
     </div>
+    <main class="main ssr">__SSR_CONTENT__</main>
 
     <div id="app" v-cloak>
         <div class="app-container">
@@ -183,7 +194,7 @@
             </aside>
 
             <!-- Main Content -->
-            <main class="main-content">
+            <main class="main-content" v-if="forceUpdate>-1">
                 <div v-if="!currentNote" class="welcome-screen">
                     <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
                         alt="Lava Notes" class="welcome-logo" :style="{ filter: logoFilter }">
@@ -1667,7 +1678,7 @@
                     findNext, replaceOne, replaceAll,
                     openSettings, closeSettings, openCreateModal, closeCreateModal,
                     create, applyHue, saveSettings, saveAllSettings,
-                    getDefaultModel, closeLLMPopup, askLLM, openLLMChat, loadMoreIcons
+                    getDefaultModel, closeLLMPopup, askLLM, openLLMChat, loadMoreIcons, forceUpdate
                 };
             }
         });

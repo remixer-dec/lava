@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -11,6 +12,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"lava-notes/internal/db"
 )
+
+type contextKey string
+
+const userRoleKey contextKey = "userRole"
 
 var ErrInvalidToken = errors.New("invalid token")
 var ErrTokenExpired = errors.New("token expired")
@@ -143,11 +148,13 @@ func (a *Auth) Middleware(next http.HandlerFunc, requireAuth bool) http.HandlerF
 			return
 		}
 
-		r.Header.Set("X-User-Role", claims.Role)
-		next(w, r)
+		// Store role in context (cannot be spoofed unlike headers)
+		ctx := context.WithValue(r.Context(), userRoleKey, claims.Role)
+		next(w, r.WithContext(ctx))
 	}
 }
 
 func IsWriter(r *http.Request) bool {
-	return r.Header.Get("X-User-Role") == "writer"
+	role, ok := r.Context().Value(userRoleKey).(string)
+	return ok && role == "writer"
 }
