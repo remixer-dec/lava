@@ -5,6 +5,9 @@
 ## Lava Notes - minimal full-stack publication / knowledge managment app
 Developed to provide balance between nice UI & UX, minimalism, performace and simplicity.
 
+<p align="center">
+  <img height="300" alt="screenshot" src="https://github.com/user-attachments/assets/d33a9833-afbd-46b4-991f-d93647429a83" />
+</p>
 
 ### Features
 - Built-in editor based on monaco, supports saving state locally and restoring it from checkpoint
