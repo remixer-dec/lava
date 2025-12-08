@@ -108,59 +108,6 @@
             transform: rotateX(90.01deg);
             pointer-events: none;
         }
-
-        .chat-panel {
-            width: 0;
-            min-width: 0;
-            overflow: hidden;
-            background: var(--bg-secondary);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            transition: width 0.3s ease, min-width 0.3s ease;
-            flex-shrink: 0;
-        }
-        .chat-panel.open { width: 340px; min-width: 340px; }
-        .editor-chat-wrapper { display: flex; flex: 1; overflow: hidden; }
-        .chat-panel-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg-tertiary);
-        }
-        .chat-panel-header img { width: 32px; height: 32px; border-radius: 6px; }
-        .chat-panel-header h3 { flex: 1; margin: 0; font-size: 16px; }
-        .chat-panel-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-        .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .chat-msg { padding: 10px 12px; border-radius: 8px; max-width: 90%; word-break: break-word; white-space: pre-wrap; font-size: 14px; }
-        .chat-msg.user { background: var(--accent-muted); color: #fff; align-self: flex-end; }
-        .chat-msg.assistant { background: var(--bg-tertiary); align-self: flex-start; }
-        .chat-input-area { display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg-tertiary); }
-        .chat-input-area textarea { resize: none; min-height: 60px; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; }
-        .chat-toggles { display: flex; gap: 16px; font-size: 13px; }
-        .chat-toggles label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-secondary); }
-        .chat-toggles input { accent-color: var(--accent); }
-        .chat-send-row { display: flex; gap: 8px; }
-        .chat-send-row .btn { flex: 1; }
-
-        .private-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background: var(--accent-muted);
-            color: #fff;
-            font-size: 11px;
-            padding: 2px 8px;
-            border-radius: 4px;
-            margin-left: 8px;
-        }
-
-        .translate-modal-langs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-        .translate-modal-langs label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .translate-modal-langs input[type="radio"] { accent-color: var(--accent); }
-        .translate-lang-input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); }
     </style>
 </head>
 
@@ -182,7 +129,7 @@
             <!-- Left Panel -->
             <aside class="left-panel" :class="{ collapsed: isPanelCollapsed }">
                 <div class="panel-header">
-                    <div class="logo-container">
+                    <div @click="goBack()" class="logo-container">
                         <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif"
                             alt="Lava Notes" class="logo" :style="{ filter: logoFilter }">
                         <span class="logo-text">{{ t('appName') }}</span>
@@ -258,27 +205,23 @@
                 <div v-else class="note-view">
                     <div class="note-header">
                         <div class="note-title-section">
-                            <div v-if="isEditing" class="note-title-edit-row">
-                                <input type="text" class="note-title-input" v-model="editTitle"
-                                    :placeholder="t('enterName')">
-                                <span v-if="getNoteLangCode(currentNote.name)" class="lang-code-badge">{{
-                                    getNoteLangCode(currentNote.name) }}</span>
-                                <span v-if="currentNote.icon === 'lock'" class="private-badge">
-                                    <i class="icon light-icon-lock"></i> {{ t('private') }}
+                            <div :class="isEditing ? 'note-title-edit-row' : 'note-title-row'">
+                                <template v-if="isEditing">
+                                    <input type="text" class="note-title-input" v-model="editTitle"
+                                        :placeholder="t('enterName')" />
+                                </template>
+                                <template v-else>
+                                    <h1 class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
+                                </template>
+                                <span v-if="getNoteLangCode(currentNote.name)" class="lang-code-badge">
+                                    {{getNoteLangCode(currentNote.name)}}</span>
+                                <span v-if="currentNote.icon === 'lock'" class="private-badge" :title="t('private')">
+                                    <i class="icon light-icon-lock"></i>
                                 </span>
-                                <span v-if="noteEncrypted" class="private-badge" style="background:var(--success)">
-                                    <i class="icon light-icon-shield-check"></i> {{ t('encrypted') }}
-                                </span>
-                            </div>
-                            <div v-else class="note-title-row">
-                                <h1 class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
-                                <span v-if="isAuthenticated && getNoteLangCode(currentNote.name)"
-                                    class="lang-code-badge">{{ getNoteLangCode(currentNote.name) }}</span>
-                                <span v-if="currentNote.icon === 'lock'" class="private-badge">
-                                    <i class="icon light-icon-lock"></i> {{ t('private') }}
-                                </span>
-                                <span v-if="noteEncrypted" class="private-badge" style="background:var(--success)">
-                                    <i class="icon light-icon-shield-check"></i> {{ t('encrypted') }}
+                                <span v-if="noteEncrypted || currentNote._decrypted" class="private-badge"
+                                    style="color:var(--success)" :title="t('encrypted')">
+                                    <i class="icon"
+                                        :class="{'light-icon-shield-check': !currentNote._decrypted, 'light-icon-key': currentNote._decrypted}"></i>
                                 </span>
                             </div>
                         </div>
@@ -290,7 +233,7 @@
                                 :title="showPreview ? t('hidePreview') : t('showPreview')">
                                 <i :class="'icon light-icon-' + (showPreview ? 'code' : 'eye')"></i>
                             </button>
-                            <button class="icon-btn" @click="toggleEditMode" :title="isEditing ? t('view') : t('edit')">
+                            <button class="icon-btn" @click="toggleEditMode" :title="t(isEditing ? 'cancel': 'edit')">
                                 <i :class="'icon light-icon-' + (isEditing ? 'x' : 'pencil')"></i>
                             </button>
                             <button class="icon-btn danger" @click="confirmDelete" :title="t('delete')">
@@ -345,30 +288,38 @@
                         <div v-if="isEditing && !showPreview" class="editor-chat-wrapper">
                             <div class="editor-container" style="flex:1;min-width:0">
                                 <vue-monaco-editor v-model:value="editContent" :theme="computedTheme"
-                                    :options="editorOptions" language="markdown" height="80vh"
+                                    :options="editorOptions" language="markdown" height="72vh"
                                     @before-mount="handleBeforeMount" @mount="handleEditorMount"></vue-monaco-editor>
                             </div>
                             <div class="chat-panel" :class="{ open: showChatPanel }">
                                 <div class="chat-panel-header">
-                                    <img src="https://wiki.hypixel.net/images/a/ae/SkyBlock_entities_fried_chicken.gif" alt="Chicken" style="width:28px;height:28px;border-radius:4px">
+                                    <img src="https://wiki.hypixel.net/images/a/ae/SkyBlock_entities_fried_chicken.gif"
+                                        alt="Chicken" style="width:28px;height:28px">
                                     <h3>{{ t('chicken') }}</h3>
-                                    <button class="icon-btn" @click="clearChat" title="Clear chat"><i class="icon light-icon-trash"></i></button>
-                                    <button class="icon-btn" @click="showChatPanel = false"><i class="icon light-icon-x"></i></button>
+                                    <button class="icon-btn" @click="clearChat" title="Clear chat"
+                                        v-show="chatMessages.length > 0"><i class="icon light-icon-trash"></i></button>
+                                    <button class="icon-btn" @click="showChatPanel = false"><i
+                                            class="icon light-icon-x"></i></button>
                                 </div>
                                 <div class="chat-panel-body">
                                     <div class="chat-messages">
-                                        <div v-for="(msg, i) in chatMessages" :key="i" class="chat-msg" :class="msg.role" v-html="formatChatMsg(msg.content)"></div>
+                                        <div v-for="(msg, i) in chatMessages" :key="i" class="chat-msg"
+                                            :class="msg.role" v-html="formatChatMsg(msg.content)"></div>
                                         <div v-if="llmLoading" class="chat-msg assistant">{{ t('thinking') }}</div>
                                     </div>
                                 </div>
                                 <div class="chat-input-area">
                                     <div class="chat-toggles">
-                                        <label><input type="checkbox" v-model="chatIncludeDoc"> {{ t('includeDocument') }}</label>
-                                        <label><input type="checkbox" v-model="chatUseTools" :disabled="!chatIncludeDoc"> {{ t('useTools') }}</label>
+                                        <label><input type="checkbox" v-model="chatIncludeDoc"> {{ t('includeDocument')
+                                            }}</label>
+                                        <label><input type="checkbox" v-model="chatUseTools"
+                                                :disabled="!chatIncludeDoc"> {{ t('useTools') }}</label>
                                     </div>
-                                    <textarea v-model="llmPrompt" :placeholder="t('enterPrompt')" @keydown.enter.ctrl="sendChat"></textarea>
+                                    <textarea v-model="llmPrompt" :placeholder="t('enterPrompt')"
+                                        @keydown.enter.ctrl="sendChat"></textarea>
                                     <div class="chat-send-row">
-                                        <button class="btn btn-primary" @click="sendChat" :disabled="!llmPrompt.trim() || llmLoading">{{ t('send') }}</button>
+                                        <button class="btn btn-primary" @click="sendChat"
+                                            :disabled="!llmPrompt.trim() || llmLoading">{{ t('send') }}</button>
                                     </div>
                                 </div>
                             </div>
@@ -406,6 +357,11 @@
                 <div class="context-menu-item" @click="translateNote">
                     <i class="icon light-icon-language"></i>
                     {{ t('translate') }}
+                </div>
+                <div v-if="contextMenu.note.icon == 'lock' && contextMenu.note.id == currentNote.id"
+                    class="context-menu-item" @click="publishNote()">
+                    <i class="icon light-icon-share"></i>
+                    {{ t('publish') }}
                 </div>
                 <div class="context-menu-item danger" @click="deleteContextNote">
                     <i class="icon light-icon-trash"></i>
@@ -475,8 +431,11 @@
 
                     <hr>
                     <h3>{{ t('encryptionKey') }}</h3>
-                    <div class="form-group">
-                        <input type="password" v-model="settings.encryptionKey" :placeholder="t('encryptionKeyPlaceholder')">
+                    <div class="form-group" style="position: relative;">
+                        <label class="settings-checkbox-label" v-if="settings.encryptionKey"><input type="checkbox"
+                                v-model="settings.saveEncryptionKey"> {{ t('saveKey') }}</label>
+                        <input type="password" v-model="settings.encryptionKey"
+                            :placeholder="t('encryptionKeyPlaceholder')">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -486,16 +445,16 @@
         </div>
 
         <!-- Create Modal -->
-        <div class="modal-overlay" v-if="showCreateModal" @click.self="closeCreateModal">
+        <div class="modal-overlay" v-if="showCreateModal || showSetIconPopup" @click.self="closeCreateModal">
             <div class="modal">
-                <div class="modal-header">
+                <div class="modal-header" v-if="!showSetIconPopup">
                     <h2>{{ currentCategory ? t('createNote') : t('createCategory') }}</h2>
                     <button class="icon-btn" @click="closeCreateModal">
                         <i class="icon light-icon-x"></i>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group">
+                    <div class="form-group" v-if="!showSetIconPopup">
                         <label>{{ t('name') }}</label>
                         <input type="text" v-model="createForm.name" :placeholder="t('enterName')"
                             @keyup.enter="create">
@@ -504,12 +463,12 @@
                         <label>{{ t('icon') }}</label>
                         <div class="icon-picker">
                             <button v-for="icon in defaultLightIcons" :key="icon" class="icon-option"
-                                :class="{ selected: createForm.icon === icon }" @click="createForm.icon = icon">
+                                :class="{ selected: createForm.icon === icon }" @click="createForm.icon = icon; createForm.customIcon = ''">
                                 <i :class="'icon light-icon-' + icon"></i>
                             </button>
                             <button v-for="icon in defaultDevIcons" :key="icon" class="icon-option"
                                 :class="{ selected: createForm.customIcon ===  'devicon-' + icon }"
-                                @click="createForm.customIcon = 'devicon-' + icon">
+                                @click="createForm.customIcon = 'devicon-' + icon; createForm.icon =''">
                                 <i :class="'icon devicon-' + icon"></i>
                             </button>
                             <button v-show="defaultLightIcons.length < 20" class="icon-option" style="font-size: 10px"
@@ -519,11 +478,12 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn" @click="closeCreateModal">{{ t('cancel') }}</button>
-                    <button class="btn btn-primary" @click="create">{{ t('create') }}</button>
+                    <button class="btn btn-primary" @click="showSetIconPopup ? saveIcon() : create() ">{{
+                        t(showSetIconPopup ? 'save': 'create')
+                        }}</button>
                 </div>
             </div>
         </div>
-
         <!-- Translate Modal -->
         <div class="modal-overlay" v-if="showTranslateModal" @click.self="showTranslateModal = false">
             <div class="modal modal-small">
@@ -540,11 +500,13 @@
                         <label><input type="radio" v-model="translateLangMode" value="ru"> Русский</label>
                         <label><input type="radio" v-model="translateLangMode" value="custom"> Other:</label>
                     </div>
-                    <input v-if="translateLangMode === 'custom'" type="text" v-model="translateCustomLang" class="translate-lang-input" placeholder="e.g. Spanish, German, Japanese...">
+                    <input v-if="translateLangMode === 'custom'" type="text" v-model="translateCustomLang"
+                        class="translate-lang-input" placeholder="e.g. Spanish, German, Japanese...">
                 </div>
                 <div class="modal-footer">
                     <button class="btn" @click="showTranslateModal = false">{{ t('cancel') }}</button>
-                    <button class="btn btn-primary" @click="doTranslate" :disabled="llmLoading">{{ t('translate') }}</button>
+                    <button class="btn btn-primary" @click="doTranslate" :disabled="llmLoading">{{ t('translate')
+                        }}</button>
                 </div>
             </div>
         </div>
@@ -695,6 +657,7 @@
                 const monacoEditor = ref(null);
 
                 const showSettings = ref(false);
+                const showSetIconPopup = ref(false)
                 const showCreateModal = ref(false);
                 const showDeleteConfirm = ref(false);
                 const showChatPanel = ref(false);
@@ -737,7 +700,8 @@
                     theme: 'dark',
                     language: 'en',
                     hue_shift: 0,
-                    encryptionKey: ''
+                    encryptionKey: '',
+                    saveEncryptionKey: true
                 });
 
                 const llmSettings = reactive({
@@ -774,6 +738,7 @@
                     padding: {top: 16}
                 };
 
+
                 const defaultLightIcons = reactive(['folder', 'file-text', 'code', 'book', 'bookmark', 'star', 'archive', 'clipboard', 'terminal', 'database', 'lock']);
                 const defaultDevIcons = reactive(['javascript-plain', 'typescript-plain', 'python-plain', 'googlecolab-plain']);
 
@@ -782,6 +747,22 @@
                 const isDevicon = (icon) => icon && icon.startsWith('devicon-');
 
                 const cache = new Map();
+                const __ref = Symbol();
+
+                function setPrivateProperty(obj, prop, value) {
+                    const raw = toRaw(obj);
+                    if (!raw[__ref]) raw[__ref] = {};
+                    if (!raw[__ref][prop]) raw[__ref][prop] = ref(value);
+                    else raw[__ref][prop].value = value;
+                    const secretRef = raw[__ref][prop];
+
+                    Object.defineProperty(raw, prop, {
+                        get() {return secretRef.value;},
+                        set(v) {secretRef.value = v;},
+                        enumerable: false,
+                        configurable: true
+                    });
+                }
 
                 async function fetchOnce(url, opts) {
                     let c = cache.get(url);
@@ -867,7 +848,7 @@
                     });
                 };
 
-                const noteEncrypted = computed(() => currentNote.value?.icon === 'lock' && settings.encryptionKey);
+                const noteEncrypted = computed(() => currentNote.value?.icon === 'lock' && currentNote.value?.name?.startsWith(ENC_PREFIX));
 
                 const formatChatMsg = (content) => {
                     if (!content) return '';
@@ -919,6 +900,16 @@
                     updatePageTitle();
                 };
 
+                const decryptNote = async (noteData) => {
+                    setPrivateProperty(noteData, '_decrypted', false)
+                    if (noteData.icon === 'lock' && settings.encryptionKey) {
+                        let origName = noteData.name
+                        noteData.name = await decryptText(noteData.name, settings.encryptionKey);
+                        noteData.content = await decryptText(noteData.content || '', settings.encryptionKey);
+                        setPrivateProperty(noteData, '_decrypted', origName != noteData.name)
+                    }
+                }
+
                 const selectNote = async (note) => {
                     try {
                         currentNote.value = {id: -1, name: note.name, content: 'Loading...', icon: note.icon};
@@ -930,10 +921,7 @@
                             return;
                         }
                         const noteData = await res.json();
-                        if (noteData.icon === 'lock' && settings.encryptionKey) {
-                            noteData.name = await decryptText(noteData.name, settings.encryptionKey);
-                            noteData.content = await decryptText(noteData.content || '', settings.encryptionKey);
-                        }
+                        await decryptNote(noteData)
                         currentNote.value = noteData;
                         isEditing.value = false;
                         showPreview.value = false;
@@ -945,6 +933,7 @@
                 };
 
                 const toggleEditMode = async () => {
+                    if (isEditing.value && !confirm(t("cancelEditing"))) return
                     isEditing.value = !isEditing.value;
                     showPreview.value = false;
                     if (isEditing.value) {
@@ -1121,10 +1110,7 @@
                             const res = await fetch(api(`notes/${noteId}`));
                             if (res.ok) {
                                 const note = await res.json();
-                                if (note.icon === 'lock' && settings.encryptionKey) {
-                                    note.name = await decryptText(note.name, settings.encryptionKey);
-                                    note.content = await decryptText(note.content || '', settings.encryptionKey);
-                                }
+                                await decryptNote(note)
                                 const cat = categories.value.find(c => c.id === note.category_id);
                                 if (cat) {
                                     currentCategory.value = cat;
@@ -1168,7 +1154,7 @@
                 const xtea = {
                     encrypt(v, k) {
                         let v0 = v[0], v1 = v[1], sum = 0, delta = 0x9E3779B9;
-                        for (let i = 0; i < 32; i++) { v0 += (((v1 << 4) ^ (v1 >>> 5)) + v1) ^ (sum + k[sum & 3]); v0 >>>= 0; sum = (sum + delta) >>> 0; v1 += (((v0 << 4) ^ (v0 >>> 5)) + v0) ^ (sum + k[(sum >>> 11) & 3]); v1 >>>= 0; }
+                        for (let i = 0; i < 32; i++) {v0 += (((v1 << 4) ^ (v1 >>> 5)) + v1) ^ (sum + k[sum & 3]); v0 >>>= 0; sum = (sum + delta) >>> 0; v1 += (((v0 << 4) ^ (v0 >>> 5)) + v0) ^ (sum + k[(sum >>> 11) & 3]); v1 >>>= 0;}
                         return [v0, v1];
                     },
                     ctr(data, key) {
@@ -1213,7 +1199,7 @@
                         const dec = await crypto.subtle.decrypt({name: 'AES-GCM', iv}, key, ct);
                         const xteaOut = xtea.ctr(new Uint8Array(dec), enc.encode(pass));
                         return new TextDecoder().decode(xteaOut);
-                    } catch { return str; }
+                    } catch {return str;}
                 }
 
                 const llmTools = [
@@ -1225,10 +1211,10 @@
 
                 const execTool = (name, args) => {
                     const lines = editContent.value.split('\n');
-                    if (name === 'find_replace') { try { editContent.value = editContent.value.replace(new RegExp(args.pattern, 'g'), args.replacement); } catch {} }
+                    if (name === 'find_replace') {try {editContent.value = editContent.value.replace(new RegExp(args.pattern, 'g'), args.replacement);} catch { } }
                     else if (name === 'append_end') editContent.value += '\n' + args.text;
-                    else if (name === 'append_after_line' && args.line > 0 && args.line <= lines.length) { lines.splice(args.line, 0, args.text); editContent.value = lines.join('\n'); }
-                    else if (name === 'delete_lines' && args.start > 0 && args.end <= lines.length) { lines.splice(args.start - 1, args.end - args.start + 1); editContent.value = lines.join('\n'); }
+                    else if (name === 'append_after_line' && args.line > 0 && args.line <= lines.length) {lines.splice(args.line, 0, args.text); editContent.value = lines.join('\n');}
+                    else if (name === 'delete_lines' && args.start > 0 && args.end <= lines.length) {lines.splice(args.start - 1, args.end - args.start + 1); editContent.value = lines.join('\n');}
                 };
 
                 async function callLLM(messages, systemPrompt, tools) {
@@ -1238,7 +1224,7 @@
                     const headers = {'Content-Type': 'application/json'};
                     if (llmSettings.apiKey) {
                         if (provider === 'openai') headers['Authorization'] = `Bearer ${llmSettings.apiKey}`;
-                        else if (provider === 'claude') { headers['x-api-key'] = llmSettings.apiKey; headers['anthropic-version'] = '2023-06-01'; headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
+                        else if (provider === 'claude') {headers['x-api-key'] = llmSettings.apiKey; headers['anthropic-version'] = '2023-06-01'; headers['anthropic-dangerous-direct-browser-access'] = 'true';}
                     }
                     let body, url;
                     if (provider === 'openai') {
@@ -1298,10 +1284,7 @@
                         });
                         if (res.ok) {
                             const saved = await res.json();
-                            if (isPrivate && settings.encryptionKey) {
-                                saved.name = await decryptText(saved.name, settings.encryptionKey);
-                                saved.content = await decryptText(saved.content || '', settings.encryptionKey);
-                            }
+                            await decryptNote(saved)
                             currentNote.value = saved;
                             isEditing.value = false;
                             showPreview.value = false;
@@ -1568,13 +1551,28 @@
                 };
 
                 const translateNote = () => {
-                    if (!contextMenu.note) { closeContextMenu(); return; }
+                    if (!contextMenu.note) {closeContextMenu(); return;}
                     translateNoteRef.value = contextMenu.note;
                     translateLangMode.value = settings.language === 'en' ? 'ru' : 'en';
                     translateCustomLang.value = '';
                     closeContextMenu();
                     showTranslateModal.value = true;
                 };
+
+                const publishNote = () => {
+                    createForm.name = currentNote.value.name;
+                    createForm.icon = 'lock';
+                    showSetIconPopup.value = true
+                    closeContextMenu();
+                }
+
+                const saveIcon = () => {
+                    currentNote.value.icon = createForm.icon || createForm.customIcon
+                    showSetIconPopup.value = false
+                    editTitle.value = editTitle.value || currentNote.value.name
+                    editContent.value = editContent.value || currentNote.value.content
+                    saveNote()
+                }
 
                 const doTranslate = async () => {
                     if (!translateNoteRef.value || !llmSettings.provider) return;
@@ -1603,7 +1601,7 @@
                             });
                             await loadNotes(currentCategory.value.id);
                         }
-                    } catch (e) { console.error('Translation error:', e); }
+                    } catch (e) {console.error('Translation error:', e);}
                     llmLoading.value = false;
                 };
 
@@ -1616,7 +1614,7 @@
                     createForm.customIcon = '';
                     showCreateModal.value = true;
                 };
-                const closeCreateModal = () => {showCreateModal.value = false;};
+                const closeCreateModal = () => {showCreateModal.value = false; showSetIconPopup.value = false};
 
                 const create = async () => {
                     if (!createForm.name.trim()) return;
@@ -1674,11 +1672,15 @@
                 });
 
                 const saveSettings = () => {
+                    if (!settings.saveEncryptionKey) {
+                        settings.encryptionKey = ''
+                    }
                     localStorage.setItem('lava-settings', JSON.stringify(settings));
                 };
 
                 const saveAllSettings = () => {
                     localStorage.setItem('lava-llm', JSON.stringify(llmSettings));
+                    if (currentNote && !currentNote.value._decrypted) {decryptNote(currentNote.value)}
                     saveSettings();
                     closeSettings();
                 };
@@ -1701,7 +1703,7 @@
                     return text.replace(/^[\s\S]*?<\/think(?:ing)?>/i, '').trim();
                 };
 
-                const clearChat = () => { chatMessages.value = []; };
+                const clearChat = () => {chatMessages.value = [];};
 
                 const sendChat = async () => {
                     if (!llmPrompt.value.trim() || !llmSettings.provider) return;
@@ -1725,7 +1727,7 @@
                             const match = response.match(/\[DOC\]([\s\S]*?)(?:\[\/DOC\]|$)/);
                             if (match?.[1]) editContent.value = match[1].trim();
                         }
-                    } catch (e) { console.error('Chat error:', e); chatMessages.value.push({role: 'assistant', content: 'Error: ' + (e.message || e)}); }
+                    } catch (e) {console.error('Chat error:', e); chatMessages.value.push({role: 'assistant', content: 'Error: ' + (e.message || e)});}
                     llmLoading.value = false;
                 };
 
@@ -1802,10 +1804,7 @@
                             const res = await fetchOnce(api(`notes/${e.state.noteId}`));
                             if (res.ok) {
                                 const note = await res.json();
-                                if (note.icon === 'lock' && settings.encryptionKey) {
-                                    note.name = await decryptText(note.name, settings.encryptionKey);
-                                    note.content = await decryptText(note.content || '', settings.encryptionKey);
-                                }
+                                await decryptNote(note)
                                 const cat = categories.value.find(c => c.id === note.category_id);
                                 if (cat && cat.id !== currentCategory.value?.id) {
                                     currentCategory.value = cat;
@@ -1856,7 +1855,7 @@
                     openCategoryContextMenu, deleteContextCategory, categoryToDelete, showCategoryDeleteConfirm, deleteCategory,
                     draftRecovery, loadDraft, discardDraft,
                     insertFormat, onLinkInput, selectLinkSuggestion, insertLink,
-                    findNext, replaceOne, replaceAll,
+                    findNext, replaceOne, replaceAll, showSetIconPopup, publishNote, saveIcon,
                     openSettings, closeSettings, openCreateModal, closeCreateModal,
                     create, applyHue, saveSettings, saveAllSettings,
                     getDefaultModel, toggleChatPanel, sendChat, clearChat, loadMoreIcons, forceUpdate
