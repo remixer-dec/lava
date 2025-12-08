@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/f5/Lava_JE14.gif" height=90px>
+</p>
+
 ## Lava Notes - minimal full-stack publication / knowledge managment app
 Developed to provide balance between nice UI & UX, minimalism, performace and simplicity.
 
