@@ -579,6 +579,8 @@ const app = createApp({
             }
             currentNote.value = note;
             updatePageTitle();
+          } else {
+            currentNote.value.name = "Not found";
           }
         } catch (e) {
           console.error(e);

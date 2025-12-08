@@ -190,6 +190,15 @@
                             </div>
                         </transition>
                     </div>
+                    <div class="breadcrumb footer">
+                        Powered by
+                        <a href="https://github.com/remixer-dec/lava" target="_blank">
+                            Lava Notes
+                        </a><br />
+                        <div style="position: absolute; bottom:4px; font-size:7px; letter-spacing:0.15px;">
+                            Logo & gif assets (c) Mojang AB
+                        </div>
+                    </div>
                 </div>
             </aside>
 
@@ -213,7 +222,8 @@
                                 <template v-else>
                                     <h1 class="note-title">{{ displayNoteName(currentNote.name) }}</h1>
                                 </template>
-                                <span v-if="getNoteLangCode(currentNote.name)" class="lang-code-badge">
+                                <span v-if="getNoteLangCode(currentNote.name) && isAuthenticated"
+                                    class="lang-code-badge">
                                     {{getNoteLangCode(currentNote.name)}}</span>
                                 <span v-if="currentNote.icon === 'lock'" class="private-badge" :title="t('private')">
                                     <i class="icon light-icon-lock"></i>
@@ -406,36 +416,38 @@
                     </div>
 
                     <hr>
-                    <h3>{{ t('llmSettings') }}</h3>
-                    <div class="form-group">
-                        <label>{{ t('provider') }}</label>
-                        <select v-model="llmSettings.provider">
-                            <option value="">{{ t('none') }}</option>
-                            <option value="gemini">Gemini</option>
-                            <option value="openai">OpenAI</option>
-                            <option value="claude">Claude</option>
-                        </select>
-                    </div>
-                    <div class="form-group" v-if="llmSettings.provider">
-                        <label>API Key</label>
-                        <input type="password" v-model="llmSettings.apiKey" placeholder="API Key">
-                    </div>
-                    <div class="form-group" v-if="llmSettings.provider === 'openai'">
-                        <label>{{ t('endpoint') }}</label>
-                        <input type="text" v-model="llmSettings.endpoint" placeholder="https://api.openai.com/v1">
-                    </div>
-                    <div class="form-group" v-if="llmSettings.provider">
-                        <label>{{ t('model') }}</label>
-                        <input type="text" v-model="llmSettings.model" :placeholder="getDefaultModel()">
-                    </div>
+                    <div v-if="isAuthenticated">
+                        <h3>{{ t('llmSettings') }}</h3>
+                        <div class="form-group">
+                            <label>{{ t('provider') }}</label>
+                            <select v-model="llmSettings.provider">
+                                <option value="">{{ t('none') }}</option>
+                                <option value="gemini">Gemini</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="claude">Claude</option>
+                            </select>
+                        </div>
+                        <div class="form-group" v-if="llmSettings.provider">
+                            <label>API Key</label>
+                            <input type="password" v-model="llmSettings.apiKey" placeholder="API Key">
+                        </div>
+                        <div class="form-group" v-if="llmSettings.provider === 'openai'">
+                            <label>{{ t('endpoint') }}</label>
+                            <input type="text" v-model="llmSettings.endpoint" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group" v-if="llmSettings.provider">
+                            <label>{{ t('model') }}</label>
+                            <input type="text" v-model="llmSettings.model" :placeholder="getDefaultModel()">
+                        </div>
 
-                    <hr>
-                    <h3>{{ t('encryptionKey') }}</h3>
-                    <div class="form-group" style="position: relative;">
-                        <label class="settings-checkbox-label" v-if="settings.encryptionKey"><input type="checkbox"
-                                v-model="settings.saveEncryptionKey"> {{ t('saveKey') }}</label>
-                        <input type="password" v-model="settings.encryptionKey"
-                            :placeholder="t('encryptionKeyPlaceholder')">
+                        <hr>
+                        <h3>{{ t('encryptionKey') }}</h3>
+                        <div class="form-group" style="position: relative;">
+                            <label class="settings-checkbox-label" v-if="settings.encryptionKey"><input type="checkbox"
+                                    v-model="settings.saveEncryptionKey"> {{ t('saveKey') }}</label>
+                            <input type="password" v-model="settings.encryptionKey"
+                                :placeholder="t('encryptionKeyPlaceholder')">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -463,7 +475,8 @@
                         <label>{{ t('icon') }}</label>
                         <div class="icon-picker">
                             <button v-for="icon in defaultLightIcons" :key="icon" class="icon-option"
-                                :class="{ selected: createForm.icon === icon }" @click="createForm.icon = icon; createForm.customIcon = ''">
+                                :class="{ selected: createForm.icon === icon }"
+                                @click="createForm.icon = icon; createForm.customIcon = ''">
                                 <i :class="'icon light-icon-' + icon"></i>
                             </button>
                             <button v-for="icon in defaultDevIcons" :key="icon" class="icon-option"

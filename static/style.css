@@ -983,6 +983,20 @@ h3 {
 .breadcrumb-slide-leave-from {
   max-height: 60px;
 }
+.breadcrumb.footer {
+  color: var(--text-secondary);
+  font-size: 10px;
+  justify-content: center;
+  font-family: monospace;
+  opacity: 0.1;
+  padding-top: 4px;
+}
+.breadcrumb.footer:hover {
+  opacity: 0.4;
+}
+.breadcrumb.footer a {
+  color: var(--text-secondary);
+}
 
 /* Language Code Badge */
 .note-title-edit-row,
