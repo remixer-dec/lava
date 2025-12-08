@@ -11,7 +11,9 @@ Developed to provide balance between nice UI & UX, minimalism, performace and si
 - Authorization for editors is implemented via a join-link, similar to jupyter-notebook
 - Localization of UI, and notes with translations via an LLM
 - Notes with "lock" icon are not visible to unauthorized users.
+- Client-side encryption for private notes (XTEA-CTR + AES-GCM)
 - View stats, optional SSR
+- LLM-assisted editing (optional)
 
 Most of the code was implemented with assistance of Claude Code, I guided it to implement requested features in a way that aligns with my vision of the project and fixed the bugs that it made.
 
