@@ -1328,7 +1328,7 @@ const app = createApp({
 
     const saveAllSettings = () => {
       localStorage.setItem("lava-llm", JSON.stringify(llmSettings));
-      if (currentNote && !currentNote.value._decrypted) {
+      if (currentNote && !currentNote.value?._decrypted) {
         decryptNote(currentNote.value);
       }
       saveSettings();
