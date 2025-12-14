@@ -66,6 +66,18 @@ func (h *Handlers) GetCategories(w http.ResponseWriter, r *http.Request) {
 	if categories == nil {
 		categories = []models.Category{}
 	}
+
+	// Filter out locked categories for unauthorized users
+	if !auth.IsWriter(r) {
+		filtered := make([]models.Category, 0, len(categories))
+		for _, cat := range categories {
+			if cat.Icon != "lock" {
+				filtered = append(filtered, cat)
+			}
+		}
+		categories = filtered
+	}
+
 	h.respond(w, categories, http.StatusOK)
 }
 
@@ -79,6 +91,12 @@ func (h *Handlers) GetCategory(w http.ResponseWriter, r *http.Request) {
 
 	category, err := h.db.GetCategory(id)
 	if err != nil {
+		h.error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
+	// Block locked categories for unauthorized users
+	if category.Icon == "lock" && !auth.IsWriter(r) {
 		h.error(w, "Category not found", http.StatusNotFound)
 		return
 	}
@@ -183,6 +201,14 @@ func (h *Handlers) GetNotes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if category is locked for non-writers
+	if !auth.IsWriter(r) {
+		if isPrivate, err := h.db.IsCategoryPrivate(categoryID); err != nil || isPrivate {
+			h.error(w, "Category not found", http.StatusNotFound)
+			return
+		}
+	}
+
 	notes, err := h.db.GetNotes(categoryID)
 	if err != nil {
 		h.error(w, "Failed to get notes", http.StatusInternalServerError)
@@ -249,40 +275,6 @@ func (h *Handlers) GetNote(w http.ResponseWriter, r *http.Request) {
 	h.respondWithViews(w, note, http.StatusOK, r)
 }
 
-func (h *Handlers) GetNoteByPath(w http.ResponseWriter, r *http.Request) {
-	category := r.URL.Query().Get("category")
-	name := r.URL.Query().Get("name")
-
-	if category == "" || name == "" {
-		h.error(w, "category and name are required", http.StatusBadRequest)
-		return
-	}
-
-	cat, err := h.db.GetCategoryByName(category)
-	if err != nil {
-		h.error(w, "Category not found", http.StatusNotFound)
-		return
-	}
-
-	note, err := h.db.GetNoteByName(cat.ID, name)
-	if err != nil {
-		h.error(w, "Note not found", http.StatusNotFound)
-		return
-	}
-
-	// Block locked notes for unauthorized users
-	if note.Icon == "lock" && !auth.IsWriter(r) {
-		h.error(w, "Note not found", http.StatusNotFound)
-		return
-	}
-
-	// Record view
-	if ipHeader := h.views.GetIPHeaderName(); ipHeader != "" {
-		h.views.RecordView(note.ID, r.Header.Get(ipHeader))
-	}
-	h.respondWithViews(w, note, http.StatusOK, r)
-}
-
 func (h *Handlers) CreateNote(w http.ResponseWriter, r *http.Request) {
 	if !auth.IsWriter(r) {
 		h.error(w, "Unauthorized", http.StatusUnauthorized)
@@ -303,6 +295,10 @@ func (h *Handlers) CreateNote(w http.ResponseWriter, r *http.Request) {
 	if req.CategoryID == 0 || req.Name == "" {
 		h.error(w, "category_id and name are required", http.StatusBadRequest)
 		return
+	}
+
+	if isPrivate, _ := h.db.IsCategoryPrivate(req.CategoryID); isPrivate {
+		req.Icon = "lock"
 	}
 
 	note, err := h.db.CreateNote(req.CategoryID, req.Name, req.Content, req.Icon)
@@ -337,6 +333,15 @@ func (h *Handlers) UpdateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	existingNote, err := h.db.GetNote(id)
+	if err != nil {
+		h.error(w, "Note not found", http.StatusNotFound)
+		return
+	}
+	if isPrivate, _ := h.db.IsCategoryPrivate(existingNote.CategoryID); isPrivate {
+		req.Icon = "lock"
+	}
+
 	note, err := h.db.UpdateNote(id, req.Name, req.Content, req.Icon)
 	if err != nil {
 		h.error(w, "Failed to update note", http.StatusInternalServerError)
@@ -344,7 +349,7 @@ func (h *Handlers) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.cache.Invalidate(fmt.Sprintf("note:%d", id))
-	h.respond(w, note, http.StatusOK)
+	h.respondWithViews(w, note, http.StatusOK, r)
 }
 
 func (h *Handlers) DeleteNote(w http.ResponseWriter, r *http.Request) {
@@ -409,4 +414,30 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 	h.respond(w, map[string]string{"status": "ok"}, http.StatusOK)
+}
+
+// Search
+func (h *Handlers) SearchNotes(w http.ResponseWriter, r *http.Request) {
+	if !auth.IsWriter(r) {
+		h.error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	query := r.URL.Query().Get("q")
+	if len(query) < 3 {
+		h.error(w, "Query must be at least 3 characters", http.StatusBadRequest)
+		return
+	}
+
+	results, err := h.db.SearchNotes(query, true, 5)
+	if err != nil {
+		h.error(w, "Search failed", http.StatusInternalServerError)
+		return
+	}
+
+	if results == nil {
+		results = []models.SearchResult{}
+	}
+
+	h.respond(w, results, http.StatusOK)
 }

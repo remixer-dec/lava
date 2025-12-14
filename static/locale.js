@@ -75,6 +75,11 @@ const translations = {
     encryptionKeyPlaceholder: "Key for private notes...",
     chicken: "Chicken",
     encrypted: "Encrypted",
+    searchPlaceholder: "Search notes...",
+    searching: "Searching...",
+    noSearchResults: "No results found",
+    views: "Views",
+    public: "Public",
   },
   ru: {
     appName: "Lava Notes",
@@ -152,6 +157,11 @@ const translations = {
     encryptionKeyPlaceholder: "Ключ для приватных заметок...",
     chicken: "Курица",
     encrypted: "Зашифровано",
+    searchPlaceholder: "Поиск заметок...",
+    searching: "Поиск...",
+    noSearchResults: "Ничего не найдено",
+    views: "Просмотры",
+    public: "Публичная",
   },
 };
 
