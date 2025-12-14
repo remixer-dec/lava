@@ -10,17 +10,15 @@ Developed to provide balance between nice UI & UX, minimalism, performace and si
 </p>
 
 ### Features
-- Built-in editor based on monaco, supports saving state locally and restoring it from checkpoint
-- Theme customization, icon customization
-- Categorization, links to other notes
-- Data is stored in an SQLite database
-- The server is written in Go and it runs in a single 15MB distroless container that should be placed behind a reverse proxy. Supports custom subpaths.
-- Authorization for editors is implemented via a join-link, similar to jupyter-notebook
-- Localization of UI, and notes with translations via an LLM
-- Notes with "lock" icon are not visible to unauthorized users.
-- Client-side encryption for private notes (XTEA-CTR + AES-GCM)
-- View stats, optional SSR
-- LLM-assisted editing (optional)
+*   **15MB Footprint:** The entire backend is a Go binary running in a tiny distroless container, intended for self-hosting.
+*   **Reliable Drafting:** Built on the Monaco editor, supports markdown and HTML. Periodically saves state locally and suggests restoring it from checkpoint when there is a difference.
+*   **Sinlge-user:** Designed for a single human editor, possibly on multiple devices. Self-host, set keys, modify as you wish, generate a join-link with `./lava-notes --generate-link` and log-in.
+*   **Privacy features:** Select a 'lock' icon to create a private note or category. Optionally, if a key is set, private notes will be encrypted and decrypted client-side with (XTEA-CTR + AES-GCM).
+*   **Contextual Organization:** Notes can be linked together and categorized, to better organize your thoughts.
+*   **Flexible minimalistic UI:** Dark and light themes and large pool of custom icons. Optionally supports SSR `(--ssr)` for SEO indexing.
+*   **Regional content separation** You can create notes with `__{language_code}` postfix in name to make them visible for other languages.
+*   **AI Integration:** Optional LLM connections can be used for translation, editing and writing assistance. LLM have access to the content that you are editing when using a built-in chat.
+*   **Portable Data:** Everything lives in a single SQLite file
 
 Most of the code was implemented with assistance of Claude Code, I guided it to implement requested features in a way that aligns with my vision of the project and fixed the bugs that it made.
 
