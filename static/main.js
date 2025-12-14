@@ -999,6 +999,7 @@ const app = createApp({
         // Fetch full note content
         const res = await fetch(api(`notes/${note.id}`));
         const fullNote = await res.json();
+        await decryptNote(fullNote);
 
         // Create clone with _clone suffix
         const baseName = displayNoteName(fullNote.name);
@@ -1009,6 +1010,11 @@ const app = createApp({
         if (langMatch) {
           newName = `${newName}__${langMatch[1]}`;
         }
+        let content = fullNote.content;
+        if (fullNote.icon == "lock" && settings.encryptionKey) {
+          newName = await encryptText(newName, settings.encryptionKey);
+          content = await encryptText(fullNote.content, settings.encryptionKey);
+        }
 
         await fetch(api("notes"), {
           method: "POST",
@@ -1016,7 +1022,7 @@ const app = createApp({
           body: JSON.stringify({
             category_id: currentCategory.value.id,
             name: newName,
-            content: fullNote.content,
+            content: content,
             icon: fullNote.icon,
           }),
         });
@@ -1275,6 +1281,9 @@ const app = createApp({
           if (res.ok) {
             await loadNotes(currentCategory.value.id);
             closeCreateModal();
+            let note = await res.json();
+            await selectNote(note);
+            toggleEditMode();
           }
         } else {
           const res = await fetch(api("categories"), {
@@ -1428,7 +1437,9 @@ const app = createApp({
       }
       searchLoading.value = true;
       try {
-        const res = await fetch(api(`notes/search?q=${encodeURIComponent(searchQuery.value)}`));
+        const res = await fetch(
+          api(`notes/search?q=${encodeURIComponent(searchQuery.value)}`),
+        );
         if (res.ok) {
           searchResults.value = await res.json();
         }
@@ -1448,18 +1459,18 @@ const app = createApp({
     };
 
     const onSearchKeydown = (e) => {
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         if (searchTimeout) clearTimeout(searchTimeout);
         doSearch();
       }
     };
 
     const selectSearchResult = async (result) => {
-      const cat = categories.value.find(c => c.id === result.category_id);
+      const cat = categories.value.find((c) => c.id === result.category_id);
       if (cat) {
         currentCategory.value = cat;
         await loadNotes(cat.id);
-        const note = notes.value.find(n => n.id === result.id);
+        const note = notes.value.find((n) => n.id === result.id);
         if (note) await selectNote(note);
       }
       searchQuery.value = "";

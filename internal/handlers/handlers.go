@@ -275,40 +275,6 @@ func (h *Handlers) GetNote(w http.ResponseWriter, r *http.Request) {
 	h.respondWithViews(w, note, http.StatusOK, r)
 }
 
-func (h *Handlers) GetNoteByPath(w http.ResponseWriter, r *http.Request) {
-	category := r.URL.Query().Get("category")
-	name := r.URL.Query().Get("name")
-
-	if category == "" || name == "" {
-		h.error(w, "category and name are required", http.StatusBadRequest)
-		return
-	}
-
-	cat, err := h.db.GetCategoryByName(category)
-	if err != nil {
-		h.error(w, "Category not found", http.StatusNotFound)
-		return
-	}
-
-	note, err := h.db.GetNoteByName(cat.ID, name)
-	if err != nil {
-		h.error(w, "Note not found", http.StatusNotFound)
-		return
-	}
-
-	// Block locked notes for unauthorized users
-	if note.Icon == "lock" && !auth.IsWriter(r) {
-		h.error(w, "Note not found", http.StatusNotFound)
-		return
-	}
-
-	// Record view
-	if ipHeader := h.views.GetIPHeaderName(); ipHeader != "" {
-		h.views.RecordView(note.ID, r.Header.Get(ipHeader))
-	}
-	h.respondWithViews(w, note, http.StatusOK, r)
-}
-
 func (h *Handlers) CreateNote(w http.ResponseWriter, r *http.Request) {
 	if !auth.IsWriter(r) {
 		h.error(w, "Unauthorized", http.StatusUnauthorized)
@@ -383,7 +349,7 @@ func (h *Handlers) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.cache.Invalidate(fmt.Sprintf("note:%d", id))
-	h.respond(w, note, http.StatusOK)
+	h.respondWithViews(w, note, http.StatusOK, r)
 }
 
 func (h *Handlers) DeleteNote(w http.ResponseWriter, r *http.Request) {

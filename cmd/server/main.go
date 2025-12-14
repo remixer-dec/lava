@@ -117,14 +117,6 @@ func main() {
 		}
 	}, false))
 
-	mux.HandleFunc("/api/notes/by-path", a.Middleware(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			h.GetNoteByPath(w, r)
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}, false))
-
 	mux.HandleFunc("/api/notes/search", a.Middleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h.SearchNotes(w, r)
