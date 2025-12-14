@@ -35,3 +35,12 @@ type AuthToken struct {
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
+
+type SearchResult struct {
+	ID           int64  `json:"id"`
+	CategoryID   int64  `json:"category_id"`
+	CategoryName string `json:"category_name"`
+	Name         string `json:"name"`
+	Icon         string `json:"icon"`
+	Snippet      string `json:"snippet"`
+}

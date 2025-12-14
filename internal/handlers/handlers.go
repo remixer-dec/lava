@@ -66,6 +66,18 @@ func (h *Handlers) GetCategories(w http.ResponseWriter, r *http.Request) {
 	if categories == nil {
 		categories = []models.Category{}
 	}
+
+	// Filter out locked categories for unauthorized users
+	if !auth.IsWriter(r) {
+		filtered := make([]models.Category, 0, len(categories))
+		for _, cat := range categories {
+			if cat.Icon != "lock" {
+				filtered = append(filtered, cat)
+			}
+		}
+		categories = filtered
+	}
+
 	h.respond(w, categories, http.StatusOK)
 }
 
@@ -79,6 +91,12 @@ func (h *Handlers) GetCategory(w http.ResponseWriter, r *http.Request) {
 
 	category, err := h.db.GetCategory(id)
 	if err != nil {
+		h.error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
+	// Block locked categories for unauthorized users
+	if category.Icon == "lock" && !auth.IsWriter(r) {
 		h.error(w, "Category not found", http.StatusNotFound)
 		return
 	}
@@ -181,6 +199,14 @@ func (h *Handlers) GetNotes(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.error(w, "Invalid category_id", http.StatusBadRequest)
 		return
+	}
+
+	// Check if category is locked for non-writers
+	if !auth.IsWriter(r) {
+		if isPrivate, err := h.db.IsCategoryPrivate(categoryID); err != nil || isPrivate {
+			h.error(w, "Category not found", http.StatusNotFound)
+			return
+		}
 	}
 
 	notes, err := h.db.GetNotes(categoryID)
@@ -305,6 +331,12 @@ func (h *Handlers) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate: notes in private categories must have lock icon
+	if isPrivate, _ := h.db.IsCategoryPrivate(req.CategoryID); isPrivate && req.Icon != "lock" {
+		h.error(w, "Notes in private categories must have lock icon", http.StatusBadRequest)
+		return
+	}
+
 	note, err := h.db.CreateNote(req.CategoryID, req.Name, req.Content, req.Icon)
 	if err != nil {
 		h.error(w, "Failed to create note", http.StatusInternalServerError)
@@ -334,6 +366,17 @@ func (h *Handlers) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Get existing note to check its category and validate private category constraint
+	existingNote, err := h.db.GetNote(id)
+	if err != nil {
+		h.error(w, "Note not found", http.StatusNotFound)
+		return
+	}
+	if isPrivate, _ := h.db.IsCategoryPrivate(existingNote.CategoryID); isPrivate && req.Icon != "lock" {
+		h.error(w, "Notes in private categories must have lock icon", http.StatusBadRequest)
 		return
 	}
 
@@ -409,4 +452,28 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 	h.respond(w, map[string]string{"status": "ok"}, http.StatusOK)
+}
+
+// Search
+func (h *Handlers) SearchNotes(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if len(query) < 3 {
+		h.error(w, "Query must be at least 3 characters", http.StatusBadRequest)
+		return
+	}
+
+	// Only writers can see private notes in search results
+	includePrivate := auth.IsWriter(r)
+
+	results, err := h.db.SearchNotes(query, includePrivate, 5)
+	if err != nil {
+		h.error(w, "Search failed", http.StatusInternalServerError)
+		return
+	}
+
+	if results == nil {
+		results = []models.SearchResult{}
+	}
+
+	h.respond(w, results, http.StatusOK)
 }

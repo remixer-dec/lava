@@ -209,6 +209,33 @@
                         alt="Lava Notes" class="welcome-logo" :style="{ filter: logoFilter }">
                     <h1>{{ t('welcome') }}</h1>
                     <p>{{ t('selectNote') }}</p>
+
+                    <!-- Search (only for authenticated users) -->
+                    <div v-if="isAuthenticated" class="search-container">
+                        <div class="search-input-wrapper">
+                            <i class="icon light-icon-search search-icon"></i>
+                            <input type="text" v-model="searchQuery" @input="onSearchInput"
+                                :placeholder="t('searchPlaceholder')" class="search-input">
+                            <button v-if="searchQuery" class="search-clear" @click="clearSearch">
+                                <i class="icon light-icon-x"></i>
+                            </button>
+                        </div>
+                        <div v-if="searchLoading" class="search-loading">{{ t('searching') }}</div>
+                        <div v-if="searchResults.length > 0" class="search-results">
+                            <div v-for="result in searchResults" :key="result.id" class="search-result"
+                                @click="selectSearchResult(result)">
+                                <div class="search-result-header">
+                                    <i v-if="result.icon === 'lock'" class="icon light-icon-lock search-result-lock"></i>
+                                    <span class="search-result-title">{{ result.name }}</span>
+                                    <span class="search-result-category">{{ result.category_name }}</span>
+                                </div>
+                                <div class="search-result-snippet">{{ result.snippet }}</div>
+                            </div>
+                        </div>
+                        <div v-if="searchQuery.length >= 3 && !searchLoading && searchResults.length === 0" class="search-no-results">
+                            {{ t('noSearchResults') }}
+                        </div>
+                    </div>
                 </div>
 
                 <div v-else class="note-view">
@@ -228,10 +255,17 @@
                                 <span v-if="currentNote.icon === 'lock'" class="private-badge" :title="t('private')">
                                     <i class="icon light-icon-lock"></i>
                                 </span>
+                                <span v-else class="public-badge" :title="t('public')">
+                                    <i class="icon light-icon-world"></i>
+                                </span>
                                 <span v-if="noteEncrypted || currentNote._decrypted" class="private-badge"
                                     style="color:var(--success)" :title="t('encrypted')">
                                     <i class="icon"
                                         :class="{'light-icon-shield-check': !currentNote._decrypted, 'light-icon-key': currentNote._decrypted}"></i>
+                                </span>
+                                <span v-if="isEditing && currentNote.views !== undefined" class="views-badge" :title="t('views')">
+                                    <i class="icon light-icon-eye"></i>
+                                    {{ currentNote.views }}
                                 </span>
                             </div>
                         </div>

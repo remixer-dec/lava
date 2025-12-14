@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/glebarez/go-sqlite"
@@ -269,4 +270,88 @@ func (d *DB) SaveViews(views map[int64]int64) error {
 	}
 
 	return tx.Commit()
+}
+
+// SearchNotes searches notes by query in title and content
+// includePrivate controls whether to include notes with lock icon
+// Encrypted notes (content starting with LAVA_ENC:) are excluded from search
+func (d *DB) SearchNotes(query string, includePrivate bool, limit int) ([]models.SearchResult, error) {
+	q := "%" + query + "%"
+	var rows *sql.Rows
+	var err error
+
+	baseQuery := `
+		SELECT n.id, n.category_id, c.name as category_name, n.name, n.icon, n.content
+		FROM notes n
+		JOIN categories c ON n.category_id = c.id
+		WHERE (n.name LIKE ? OR n.content LIKE ?)
+		AND n.content NOT LIKE 'LAVA_ENC:%'
+		AND n.name NOT LIKE 'LAVA_ENC:%'
+	`
+
+	if !includePrivate {
+		baseQuery += ` AND n.icon != 'lock' AND c.icon != 'lock'`
+	}
+	baseQuery += ` ORDER BY n.updated_at DESC LIMIT ?`
+
+	rows, err = d.conn.Query(baseQuery, q, q, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []models.SearchResult
+	for rows.Next() {
+		var r models.SearchResult
+		var content string
+		if err := rows.Scan(&r.ID, &r.CategoryID, &r.CategoryName, &r.Name, &r.Icon, &content); err != nil {
+			return nil, err
+		}
+		r.Snippet = extractSnippet(content, query, 100)
+		results = append(results, r)
+	}
+	return results, nil
+}
+
+// extractSnippet extracts a snippet of text around the matched query
+func extractSnippet(content, query string, maxLen int) string {
+	lowerContent := strings.ToLower(content)
+	lowerQuery := strings.ToLower(query)
+	idx := strings.Index(lowerContent, lowerQuery)
+	if idx == -1 {
+		// Query matched in title, show beginning of content
+		if len(content) > maxLen {
+			return content[:maxLen] + "..."
+		}
+		return content
+	}
+
+	// Find context around the match
+	start := idx - maxLen/2
+	if start < 0 {
+		start = 0
+	}
+	end := idx + len(query) + maxLen/2
+	if end > len(content) {
+		end = len(content)
+	}
+
+	snippet := content[start:end]
+	if start > 0 {
+		snippet = "..." + snippet
+	}
+	if end < len(content) {
+		snippet = snippet + "..."
+	}
+	return snippet
+}
+
+// IsCategoryPrivate checks if a category has lock icon
+func (d *DB) IsCategoryPrivate(categoryID int64) (bool, error) {
+	var icon string
+	err := d.conn.QueryRow(`SELECT icon FROM categories WHERE id = ?`, categoryID).Scan(&icon)
+	if err != nil {
+		return false, err
+	}
+	return icon == "lock", nil
 }

@@ -55,6 +55,10 @@ const app = createApp({
     const translateLangMode = ref("en");
     const translateCustomLang = ref("");
     const translateNoteRef = ref(null);
+    const searchQuery = ref("");
+    const searchResults = ref([]);
+    const searchLoading = ref(false);
+    let searchTimeout = null;
     let translations = reactive({ en: {}, ru: {} });
 
     const contextMenu = reactive({
@@ -1417,6 +1421,44 @@ const app = createApp({
       }
     };
 
+    // Search with 1.2s debounce
+    const onSearchInput = () => {
+      if (searchTimeout) clearTimeout(searchTimeout);
+      if (searchQuery.value.length < 3) {
+        searchResults.value = [];
+        return;
+      }
+      searchTimeout = setTimeout(async () => {
+        searchLoading.value = true;
+        try {
+          const res = await fetch(api(`notes/search?q=${encodeURIComponent(searchQuery.value)}`));
+          if (res.ok) {
+            searchResults.value = await res.json();
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        searchLoading.value = false;
+      }, 1200);
+    };
+
+    const selectSearchResult = async (result) => {
+      const cat = categories.value.find(c => c.id === result.category_id);
+      if (cat) {
+        currentCategory.value = cat;
+        await loadNotes(cat.id);
+        const note = notes.value.find(n => n.id === result.id);
+        if (note) await selectNote(note);
+      }
+      searchQuery.value = "";
+      searchResults.value = [];
+    };
+
+    const clearSearch = () => {
+      searchQuery.value = "";
+      searchResults.value = [];
+    };
+
     // Syntax highlighting for code blocks using syntax-highlight-element
     let syntaxHighlightLoaded = false;
     const loadSyntaxHighlight = async () => {
@@ -1635,6 +1677,12 @@ const app = createApp({
       clearChat,
       loadMoreIcons,
       forceUpdate,
+      searchQuery,
+      searchResults,
+      searchLoading,
+      onSearchInput,
+      selectSearchResult,
+      clearSearch,
     };
   },
 });
