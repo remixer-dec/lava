@@ -189,6 +189,14 @@ func renderInline(text string) string {
 	linkRe := regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
 	text = linkRe.ReplaceAllString(text, `<a href="$2">$1</a>`)
 
+	// Superscript ^text^
+	supRe := regexp.MustCompile(`\^([^^]+)\^`)
+	text = supRe.ReplaceAllString(text, "<sup>$1</sup>")
+
+	// Subscript ~text~
+	subRe := regexp.MustCompile(`~([^~]+)~`)
+	text = subRe.ReplaceAllString(text, "<sub>$1</sub>")
+
 	return text
 }
 

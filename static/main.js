@@ -1421,25 +1421,37 @@ const app = createApp({
       }
     };
 
-    // Search with 1.2s debounce
+    const doSearch = async () => {
+      if (searchQuery.value.length < 3) {
+        searchResults.value = [];
+        return;
+      }
+      searchLoading.value = true;
+      try {
+        const res = await fetch(api(`notes/search?q=${encodeURIComponent(searchQuery.value)}`));
+        if (res.ok) {
+          searchResults.value = await res.json();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      searchLoading.value = false;
+    };
+
     const onSearchInput = () => {
       if (searchTimeout) clearTimeout(searchTimeout);
       if (searchQuery.value.length < 3) {
         searchResults.value = [];
         return;
       }
-      searchTimeout = setTimeout(async () => {
-        searchLoading.value = true;
-        try {
-          const res = await fetch(api(`notes/search?q=${encodeURIComponent(searchQuery.value)}`));
-          if (res.ok) {
-            searchResults.value = await res.json();
-          }
-        } catch (e) {
-          console.error(e);
-        }
-        searchLoading.value = false;
-      }, 1200);
+      searchTimeout = setTimeout(doSearch, 800);
+    };
+
+    const onSearchKeydown = (e) => {
+      if (e.key === 'Enter') {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        doSearch();
+      }
     };
 
     const selectSearchResult = async (result) => {
@@ -1681,6 +1693,7 @@ const app = createApp({
       searchResults,
       searchLoading,
       onSearchInput,
+      onSearchKeydown,
       selectSearchResult,
       clearSearch,
     };

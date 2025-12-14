@@ -313,34 +313,36 @@ func (d *DB) SearchNotes(query string, includePrivate bool, limit int) ([]models
 	return results, nil
 }
 
-// extractSnippet extracts a snippet of text around the matched query
 func extractSnippet(content, query string, maxLen int) string {
+	runes := []rune(content)
 	lowerContent := strings.ToLower(content)
 	lowerQuery := strings.ToLower(query)
-	idx := strings.Index(lowerContent, lowerQuery)
-	if idx == -1 {
-		// Query matched in title, show beginning of content
-		if len(content) > maxLen {
-			return content[:maxLen] + "..."
+	byteIdx := strings.Index(lowerContent, lowerQuery)
+
+	if byteIdx == -1 {
+		if len(runes) > maxLen {
+			return string(runes[:maxLen]) + "..."
 		}
 		return content
 	}
 
-	// Find context around the match
-	start := idx - maxLen/2
+	runeIdx := len([]rune(content[:byteIdx]))
+	queryRuneLen := len([]rune(query))
+
+	start := runeIdx - maxLen/2
 	if start < 0 {
 		start = 0
 	}
-	end := idx + len(query) + maxLen/2
-	if end > len(content) {
-		end = len(content)
+	end := runeIdx + queryRuneLen + maxLen/2
+	if end > len(runes) {
+		end = len(runes)
 	}
 
-	snippet := content[start:end]
+	snippet := string(runes[start:end])
 	if start > 0 {
 		snippet = "..." + snippet
 	}
-	if end < len(content) {
+	if end < len(runes) {
 		snippet = snippet + "..."
 	}
 	return snippet

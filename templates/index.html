@@ -214,7 +214,7 @@
                     <div v-if="isAuthenticated" class="search-container">
                         <div class="search-input-wrapper">
                             <i class="icon light-icon-search search-icon"></i>
-                            <input type="text" v-model="searchQuery" @input="onSearchInput"
+                            <input type="text" v-model="searchQuery" @input="onSearchInput" @keydown="onSearchKeydown"
                                 :placeholder="t('searchPlaceholder')" class="search-input">
                             <button v-if="searchQuery" class="search-clear" @click="clearSearch">
                                 <i class="icon light-icon-x"></i>
@@ -255,7 +255,7 @@
                                 <span v-if="currentNote.icon === 'lock'" class="private-badge" :title="t('private')">
                                     <i class="icon light-icon-lock"></i>
                                 </span>
-                                <span v-else class="public-badge" :title="t('public')">
+                                <span v-else-if="isAuthenticated && !isEditing" class="public-badge" :title="t('public')">
                                     <i class="icon light-icon-world"></i>
                                 </span>
                                 <span v-if="noteEncrypted || currentNote._decrypted" class="private-badge"

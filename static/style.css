@@ -1394,10 +1394,20 @@ syntax-highlight {
   display: inline-flex;
   align-items: center;
   gap: 0;
-  color: var(--success);
   font-size: 17px;
   padding: 0;
   border-radius: 4px;
   margin: 0;
   line-height: 1;
+}
+
+/* Print styles */
+@media print {
+  .left-panel,
+  .panel-toggle {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+  }
 }
